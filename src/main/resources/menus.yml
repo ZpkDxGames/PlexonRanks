@@ -1,0 +1,101 @@
+schema-version: 1
+
+rank-list:
+  title: "<gradient:#FFE98A:#FFB84D><bold>Plexon Ranks</bold></gradient> <dark_gray>•</dark_gray> <gray>Page %page%/%pages%</gray>"
+  size: 54
+  refresh:
+    enabled: true
+    interval-ticks: 40
+  rank-slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34]
+  rank-template:
+    material: PAPER
+    amount: 1
+    glow: false
+    name: "%rank_name%"
+    lore:
+      - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+      - "<gray>Status:</gray> %status%"
+      - ""
+      - "<white><bold>Requirements</bold></white>"
+      - "%requirements%"
+      - ""
+      - "<white><bold>Rewards</bold></white>"
+      - "%rewards%"
+      - ""
+      - "<dark_gray>Rank #%rank_order%</dark_gray>"
+      - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+  states:
+    completed:
+      material: LIME_STAINED_GLASS_PANE
+      glow: false
+      status: "<green><bold>COMPLETED</bold></green>"
+    current:
+      material: LIGHT_BLUE_STAINED_GLASS_PANE
+      glow: true
+      status: "<aqua><bold>CURRENT</bold></aqua>"
+    next:
+      material: YELLOW_STAINED_GLASS_PANE
+      glow: true
+      status: "<yellow><bold>NEXT</bold></yellow>"
+    locked:
+      material: RED_STAINED_GLASS_PANE
+      glow: false
+      status: "<red><bold>LOCKED</bold></red>"
+    max:
+      material: NETHER_STAR
+      glow: true
+      status: "<gradient:#FFE98A:#FFB84D><bold>MAX RANK</bold></gradient>"
+  filler:
+    enabled: true
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+  navigation:
+    previous:
+      slot: 45
+      material: ARROW
+      name: "<yellow>Previous Page</yellow>"
+      lore: ["<gray>Open page %previous_page%.</gray>"]
+    info:
+      slot: 49
+      material: NETHER_STAR
+      name: "<gradient:#FFE98A:#FFB84D><bold>Your Progress</bold></gradient>"
+      lore:
+        - "<gray>Current:</gray> %player_rank%"
+        - "<gray>Next:</gray> %next_rank%"
+        - "<gray>Overall:</gray> <yellow>%progress_percent%%</yellow>"
+    close:
+      slot: 50
+      material: BARRIER
+      name: "<red>Close</red>"
+      lore: []
+    next:
+      slot: 53
+      material: ARROW
+      name: "<yellow>Next Page</yellow>"
+      lore: ["<gray>Open page %next_page%.</gray>"]
+
+requirement-display:
+  MONEY:
+    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>Money:</gray> <gold>$%current%</gold><dark_gray>/</dark_gray><gold>$%required%</gold>"
+    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>Money:</gray> <gold>$%current%</gold><dark_gray>/</dark_gray><gold>$%required%</gold> <dark_gray>(-$%missing%)</dark_gray>"
+  XP_LEVELS:
+    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>XP Levels:</gray> <yellow>%current%</yellow><dark_gray>/</dark_gray><yellow>%required%</yellow>"
+    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>XP Levels:</gray> <yellow>%current%</yellow><dark_gray>/</dark_gray><yellow>%required%</yellow>"
+  PLAYTIME:
+    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>Playtime:</gray> <aqua>%current_formatted%</aqua><dark_gray>/</dark_gray><aqua>%required_formatted%</aqua>"
+    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>Playtime:</gray> <aqua>%current_formatted%</aqua><dark_gray>/</dark_gray><aqua>%required_formatted%</aqua>"
+  PERMISSION:
+    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>Special access</gray>"
+    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>Special access</gray>"
+  PLACEHOLDER:
+    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>%placeholder%:</gray> <white>%current%</white>"
+    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>%placeholder%:</gray> <white>%current%</white><dark_gray>/</dark_gray><white>%required%</white>"
+  ITEM:
+    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>%material%:</gray> <white>%current%</white><dark_gray>/</dark_gray><white>%required%</white>"
+    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>%material%:</gray> <white>%current%</white><dark_gray>/</dark_gray><white>%required%</white>"
+
+admin:
+  list-title: "<gradient:#FFE98A:#FFB84D><bold>Rank Editor</bold></gradient> <gray>• %page%/%pages%</gray>"
+  edit-title: "<gradient:#FFE98A:#FFB84D><bold>Edit %rank_short_name%</bold></gradient>"
+  lore-title: "<gradient:#FFE98A:#FFB84D><bold>Lore • %rank_short_name%</bold></gradient>"
+

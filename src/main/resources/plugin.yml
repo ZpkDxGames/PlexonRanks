@@ -1,0 +1,79 @@
+name: PlexonRanks
+version: '${project.version}'
+main: com.zpkdxgames.plexonranks.PlexonRanksPlugin
+api-version: '1.21'
+author: ZpkDxGames
+website: https://github.com/ZpkDxGames/PlexonRanks
+description: Flexible rank progression for PlexonCraft and the Plexon plugin family.
+depend:
+  - Vault
+  - LuckPerms
+softdepend:
+  - PlaceholderAPI
+  - DiscordSRV
+commands:
+  rank:
+    description: View your current rank and progress.
+    usage: /rank [info|menu]
+    permission: plexonranks.rank
+  ranks:
+    description: Open the PlexonRanks progression menu.
+    usage: /ranks [page]
+    permission: plexonranks.ranks
+  rankup:
+    description: Advance to the next configured rank.
+    usage: /rankup
+    permission: plexonranks.rankup
+  plexonranks:
+    description: PlexonRanks administration command.
+    usage: /plexonranks help
+    aliases: [pranks]
+permissions:
+  plexonranks.use:
+    description: Grants access to player-facing PlexonRanks features.
+    default: true
+    children:
+      plexonranks.rank: true
+      plexonranks.ranks: true
+      plexonranks.rankup: true
+  plexonranks.rank:
+    default: true
+  plexonranks.ranks:
+    default: true
+  plexonranks.rankup:
+    default: true
+  plexonranks.admin:
+    description: Grants every PlexonRanks administration permission.
+    default: op
+    children:
+      plexonranks.admin.reload: true
+      plexonranks.admin.editor: true
+      plexonranks.admin.info: true
+      plexonranks.admin.setrank: true
+      plexonranks.admin.reset: true
+      plexonranks.admin.promote: true
+      plexonranks.admin.demote: true
+      plexonranks.admin.sync: true
+      plexonranks.admin.validate: true
+      plexonranks.admin.backup: true
+  plexonranks.admin.reload:
+    default: op
+  plexonranks.admin.editor:
+    default: op
+  plexonranks.admin.info:
+    default: op
+  plexonranks.admin.setrank:
+    default: op
+  plexonranks.admin.reset:
+    default: op
+  plexonranks.admin.promote:
+    default: op
+  plexonranks.admin.demote:
+    default: op
+  plexonranks.admin.sync:
+    default: op
+  plexonranks.admin.validate:
+    default: op
+  plexonranks.admin.backup:
+    default: op
+

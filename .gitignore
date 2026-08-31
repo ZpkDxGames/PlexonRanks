@@ -1,0 +1,11 @@
+target/
+.idea/
+*.iml
+*.log
+*.db
+*.db-shm
+*.db-wal
+.classpath
+.project
+.settings/
+

@@ -1,0 +1,2000 @@
+# PlexonRanks 1.0 default progression ladder
+# Converted faithfully from the supplied Rankup 1.2 Fixer template.
+# Stable IDs are used for storage; order controls progression.
+# Legacy '&' and '&x' colors remain supported by formatting.legacy-ampersand-support.
+schema-version: 1
+ranks:
+  unranked:
+    order: 0
+    enabled: true
+    visible: true
+    default: true
+    display:
+      name: '&8[&7Unranked&8]&r'
+      short-name: Unranked
+      tag: '&8[&7Unranked&8]&r'
+      description:
+      - '&7Your progression starts here.'
+    requirements: []
+    rewards: []
+    announce: false
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&7Your progression starts here.'
+      - '&7Use &e/rankup &7to begin climbing.'
+      - ''
+      - '&8Rank ID: &70'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-1:
+    order: 1
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&4&B&C&C&5e&x&C&0&C&7&C&Fw&x&C&D&D&3&D&Ab&x&D&9&D&E&E&4i&x&E&5&E&A&E&Fe &x&F&1&F&5&F&9I&8]&r'
+      short-name: Newbie I
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&4&B&C&C&5e&x&C&0&C&7&C&Fw&x&C&D&D&3&D&Ab&x&D&9&D&E&E&4i&x&E&5&E&A&E&Fe &x&F&1&F&5&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#1&7.'
+    requirements:
+    - type: MONEY
+      amount: 2000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 1
+      consume: true
+    - type: PLAYTIME
+      amount: 180
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 1000
+      - keysadmin give %player% basic 1
+      display:
+      - '&8• &a+1,000 &7Claim Blocks'
+      - '&8• &f1× Basic Key'
+      - '&8• &dDisguise &8▸ &fPlayer'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.1
+      - iDisguise.disguise.player
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-2:
+    order: 2
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0I&x&F&1&F&5&F&9I&8]&r'
+      short-name: Newbie II
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0I&x&F&1&F&5&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#2&7.'
+    requirements:
+    - type: MONEY
+      amount: 4000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 2
+      consume: true
+    - type: PLAYTIME
+      amount: 360
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 2000
+      display:
+      - '&8• &a+2,000 &7Claim Blocks'
+      - '&8• &e/head &7command'
+      - '&8• &dDisguise &8▸ &fCat'
+      - '&8• &e/workbench &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.2
+      - essentials.head
+      - iDisguise.disguise.cat
+      - essentials.workbench
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-3:
+    order: 3
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&1&B&9&C&2e&x&B&A&C&1&C&Aw&x&C&3&C&A&D&2b&x&C&D&D&3&D&Ai&x&D&6&D&B&E&1e &x&D&F&E&4&E&9I&x&E&8&E&C&F&1I&x&F&1&F&5&F&9I&8]&r'
+      short-name: Newbie III
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&1&B&9&C&2e&x&B&A&C&1&C&Aw&x&C&3&C&A&D&2b&x&C&D&D&3&D&Ai&x&D&6&D&B&E&1e &x&D&F&E&4&E&9I&x&E&8&E&C&F&1I&x&F&1&F&5&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#3&7.'
+    requirements:
+    - type: MONEY
+      amount: 6000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 3
+      consume: true
+    - type: PLAYTIME
+      amount: 540
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 3000
+      display:
+      - '&8• &a+3,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fWolf'
+      - '&8• &e/hat &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.3
+      - iDisguise.disguise.wolf
+      - essentials.hat
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-4:
+    order: 4
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0I&x&F&1&F&5&F&9V&8]&r'
+      short-name: Newbie IV
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0I&x&F&1&F&5&F&9V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#4&7.'
+    requirements:
+    - type: MONEY
+      amount: 8000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 4
+      consume: true
+    - type: PLAYTIME
+      amount: 720
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 4000
+      display:
+      - '&8• &a+4,000 &7Claim Blocks'
+      - '&8• &bColored Chat'
+      - '&8• &dDisguise &8▸ &fPig'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.4
+      - iDisguise.disguise.pig
+      - essentials.chat.color
+      - venturechat.color
+      - venturechat.color.legacy
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-5:
+    order: 5
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&4&B&C&C&5e&x&C&0&C&7&C&Fw&x&C&D&D&3&D&Ab&x&D&9&D&E&E&4i&x&E&5&E&A&E&Fe &x&F&1&F&5&F&9V&8]&r'
+      short-name: Newbie V
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&4&B&C&C&5e&x&C&0&C&7&C&Fw&x&C&D&D&3&D&Ab&x&D&9&D&E&E&4i&x&E&5&E&A&E&Fe &x&F&1&F&5&F&9V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#5&7.'
+    requirements:
+    - type: MONEY
+      amount: 10000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 5
+      consume: true
+    - type: PLAYTIME
+      amount: 900
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 5000
+      - keysadmin give %player% basic 2
+      display:
+      - '&8• &a+5,000 &7Claim Blocks'
+      - '&8• &f2× Basic Keys'
+      - '&8• &dDisguise &8▸ &fCow'
+      - '&8• &e/disposal &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.5
+      - iDisguise.disguise.cow
+      - essentials.disposal
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-6:
+    order: 6
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0V&x&F&1&F&5&F&9I&8]&r'
+      short-name: Newbie VI
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0V&x&F&1&F&5&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#6&7.'
+    requirements:
+    - type: MONEY
+      amount: 12000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 6
+      consume: true
+    - type: PLAYTIME
+      amount: 1080
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 6000
+      display:
+      - '&8• &a+6,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fSheep'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.6
+      - essentials.head
+      - iDisguise.disguise.sheep
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-7:
+    order: 7
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&1&B&9&C&2e&x&B&A&C&1&C&Aw&x&C&3&C&A&D&2b&x&C&D&D&3&D&Ai&x&D&6&D&B&E&1e &x&D&F&E&4&E&9V&x&E&8&E&C&F&1I&x&F&1&F&5&F&9I&8]&r'
+      short-name: Newbie VII
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&1&B&9&C&2e&x&B&A&C&1&C&Aw&x&C&3&C&A&D&2b&x&C&D&D&3&D&Ai&x&D&6&D&B&E&1e &x&D&F&E&4&E&9V&x&E&8&E&C&F&1I&x&F&1&F&5&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#7&7.'
+    requirements:
+    - type: MONEY
+      amount: 14000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 7
+      consume: true
+    - type: PLAYTIME
+      amount: 1260
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 7000
+      display:
+      - '&8• &a+7,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fChicken'
+      - '&8• &e/compass &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.7
+      - essentials.head
+      - iDisguise.disguise.chicken
+      - essentials.compass
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-8:
+    order: 8
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&0&B&8&C&1e&x&B&8&B&F&C&8w&x&C&0&C&7&C&Fb&x&C&8&C&F&D&6i&x&D&1&D&6&D&De &x&D&9&D&E&E&4V&x&E&1&E&6&E&BI&x&E&9&E&D&F&2I&x&F&1&F&5&F&9I&8]&r'
+      short-name: Newbie VIII
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&0&B&8&C&1e&x&B&8&B&F&C&8w&x&C&0&C&7&C&Fb&x&C&8&C&F&D&6i&x&D&1&D&6&D&De &x&D&9&D&E&E&4V&x&E&1&E&6&E&BI&x&E&9&E&D&F&2I&x&F&1&F&5&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#8&7.'
+    requirements:
+    - type: MONEY
+      amount: 16000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 8
+      consume: true
+    - type: PLAYTIME
+      amount: 1440
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 8000
+      display:
+      - '&8• &a+8,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fRabbit'
+      - '&8• &e/enderchest &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.8
+      - iDisguise.disguise.rabbit
+      - essentials.enderchest
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-9:
+    order: 9
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0I&x&F&1&F&5&F&9X&8]&r'
+      short-name: Newbie IX
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&2&B&A&C&3e&x&B&D&C&4&C&Cw&x&C&7&C&E&D&5b&x&D&2&D&7&D&Ei&x&D&C&E&1&E&7e &x&E&7&E&B&F&0I&x&F&1&F&5&F&9X&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#9&7.'
+    requirements:
+    - type: MONEY
+      amount: 18000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 9
+      consume: true
+    - type: PLAYTIME
+      amount: 1620
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 9000
+      display:
+      - '&8• &a+9,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fCod'
+      - '&8• &e/depth &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.9
+      - iDisguise.disguise.cod
+      - essentials.depth
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  newbie-10:
+    order: 10
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&A&8&B&0&B&AN&x&B&4&B&C&C&5e&x&C&0&C&7&C&Fw&x&C&D&D&3&D&Ab&x&D&9&D&E&E&4i&x&E&5&E&A&E&Fe &x&F&1&F&5&F&9X&8]&r'
+      short-name: Newbie X
+      tag: '&8[&x&A&8&B&0&B&AN&x&B&4&B&C&C&5e&x&C&0&C&7&C&Fw&x&C&D&D&3&D&Ab&x&D&9&D&E&E&4i&x&E&5&E&A&E&Fe &x&F&1&F&5&F&9X&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#10&7.'
+    requirements:
+    - type: MONEY
+      amount: 20000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 10
+      consume: true
+    - type: PLAYTIME
+      amount: 1800
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 10000
+      - keysadmin give %player% basic 2
+      - keysadmin give %player% rare 1
+      display:
+      - '&8• &a+10,000 &7Claim Blocks'
+      - '&8• &f2× Basic Keys'
+      - '&8• &b1× Rare Key'
+      - '&8• &dDisguise &8▸ &fSalmon'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.10
+      - iDisguise.disguise.salmon
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  tinkerer-1:
+    order: 11
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&1i&x&F&F&D&3&6&Bn&x&F&F&D&8&7&5k&x&F&F&D&D&7&Fe&x&F&F&E&2&8&8r&x&F&F&E&8&9&2e&x&F&F&E&D&9&Cr &x&F&F&F&2&A&6I&8]&r'
+      short-name: Tinkerer I
+      tag: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&1i&x&F&F&D&3&6&Bn&x&F&F&D&8&7&5k&x&F&F&D&D&7&Fe&x&F&F&E&2&8&8r&x&F&F&E&8&9&2e&x&F&F&E&D&9&Cr &x&F&F&F&2&A&6I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#11&7.'
+    requirements:
+    - type: MONEY
+      amount: 28000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 12
+      consume: true
+    - type: PLAYTIME
+      amount: 1980
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 11000
+      display:
+      - '&8• &a+11,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fPufferfish'
+      - '&8• &e/condense &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.11
+      - iDisguise.disguise.pufferfish
+      - essentials.condense
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  tinkerer-2:
+    order: 12
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&0i&x&F&F&D&1&6&9n&x&F&F&D&6&7&1k&x&F&F&D&B&7&Ae&x&F&F&D&F&8&3r&x&F&F&E&4&8&Ce&x&F&F&E&9&9&4r &x&F&F&E&D&9&DI&x&F&F&F&2&A&6I&8]&r'
+      short-name: Tinkerer II
+      tag: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&0i&x&F&F&D&1&6&9n&x&F&F&D&6&7&1k&x&F&F&D&B&7&Ae&x&F&F&D&F&8&3r&x&F&F&E&4&8&Ce&x&F&F&E&9&9&4r &x&F&F&E&D&9&DI&x&F&F&F&2&A&6I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#12&7.'
+    requirements:
+    - type: MONEY
+      amount: 36000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 14
+      consume: true
+    - type: PLAYTIME
+      amount: 2160
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 12000
+      - keysadmin give %player% basic 2
+      display:
+      - '&8• &a+12,000 &7Claim Blocks'
+      - '&8• &f2× Basic Keys'
+      - '&8• &dDisguise &8▸ &fTropical Fish'
+      - '&8• &e/getpos &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.12
+      - iDisguise.disguise.tropical_fish
+      - essentials.getpos
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  tinkerer-3:
+    order: 13
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&F&F&C&8&5&7T&x&F&F&C&C&5&Fi&x&F&F&D&0&6&7n&x&F&F&D&5&6&Fk&x&F&F&D&9&7&7e&x&F&F&D&D&7&Fr&x&F&F&E&1&8&6e&x&F&F&E&5&8&Er &x&F&F&E&A&9&6I&x&F&F&E&E&9&EI&x&F&F&F&2&A&6I&8]&r'
+      short-name: Tinkerer III
+      tag: '&8[&x&F&F&C&8&5&7T&x&F&F&C&C&5&Fi&x&F&F&D&0&6&7n&x&F&F&D&5&6&Fk&x&F&F&D&9&7&7e&x&F&F&D&D&7&Fr&x&F&F&E&1&8&6e&x&F&F&E&5&8&Er &x&F&F&E&A&9&6I&x&F&F&E&E&9&EI&x&F&F&F&2&A&6I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#13&7.'
+    requirements:
+    - type: MONEY
+      amount: 44000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 16
+      consume: true
+    - type: PLAYTIME
+      amount: 2340
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 13000
+      display:
+      - '&8• &a+13,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fSquid'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.13
+      - iDisguise.disguise.squid
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  tinkerer-4:
+    order: 14
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&0i&x&F&F&D&1&6&9n&x&F&F&D&6&7&1k&x&F&F&D&B&7&Ae&x&F&F&D&F&8&3r&x&F&F&E&4&8&Ce&x&F&F&E&9&9&4r &x&F&F&E&D&9&DI&x&F&F&F&2&A&6V&8]&r'
+      short-name: Tinkerer IV
+      tag: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&0i&x&F&F&D&1&6&9n&x&F&F&D&6&7&1k&x&F&F&D&B&7&Ae&x&F&F&D&F&8&3r&x&F&F&E&4&8&Ce&x&F&F&E&9&9&4r &x&F&F&E&D&9&DI&x&F&F&F&2&A&6V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#14&7.'
+    requirements:
+    - type: MONEY
+      amount: 52000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 18
+      consume: true
+    - type: PLAYTIME
+      amount: 2520
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 14000
+      display:
+      - '&8• &a+14,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fGlow Squid'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.14
+      - iDisguise.disguise.glow_squid
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  tinkerer-5:
+    order: 15
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&1i&x&F&F&D&3&6&Bn&x&F&F&D&8&7&5k&x&F&F&D&D&7&Fe&x&F&F&E&2&8&8r&x&F&F&E&8&9&2e&x&F&F&E&D&9&Cr &x&F&F&F&2&A&6V&8]&r'
+      short-name: Tinkerer V
+      tag: '&8[&x&F&F&C&8&5&7T&x&F&F&C&D&6&1i&x&F&F&D&3&6&Bn&x&F&F&D&8&7&5k&x&F&F&D&D&7&Fe&x&F&F&E&2&8&8r&x&F&F&E&8&9&2e&x&F&F&E&D&9&Cr &x&F&F&F&2&A&6V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#15&7.'
+    requirements:
+    - type: MONEY
+      amount: 60000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 20
+      consume: true
+    - type: PLAYTIME
+      amount: 2700
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 15000
+      - keysadmin give %player% rare 2
+      display:
+      - '&8• &a+15,000 &7Claim Blocks'
+      - '&8• &b2× Rare Keys'
+      - '&8• &dDisguise &8▸ &fBat'
+      - '&8• &e/back &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.15
+      - iDisguise.disguise.bat
+      - essentials.back
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  technician-1:
+    order: 16
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&6&8&D&3&9&1T&x&7&1&D&7&9&8e&x&7&B&D&A&9&Fc&x&8&4&D&E&A&5h&x&8&E&E&1&A&Cn&x&9&7&E&5&B&3i&x&A&0&E&8&B&Ac&x&A&A&E&C&C&1i&x&B&3&E&F&C&7a&x&B&D&F&3&C&En
+        &x&C&6&F&6&D&5I&8]&r'
+      short-name: Technician I
+      tag: '&8[&x&6&8&D&3&9&1T&x&7&1&D&7&9&8e&x&7&B&D&A&9&Fc&x&8&4&D&E&A&5h&x&8&E&E&1&A&Cn&x&9&7&E&5&B&3i&x&A&0&E&8&B&Ac&x&A&A&E&C&C&1i&x&B&3&E&F&C&7a&x&B&D&F&3&C&En
+        &x&C&6&F&6&D&5I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#16&7.'
+    requirements:
+    - type: MONEY
+      amount: 75000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 22
+      consume: true
+    - type: PLAYTIME
+      amount: 2880
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 16000
+      display:
+      - '&8• &a+16,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fFox'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.16
+      - iDisguise.disguise.fox
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  technician-2:
+    order: 17
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&6&8&D&3&9&1T&x&7&1&D&6&9&7e&x&7&9&D&9&9&Dc&x&8&2&D&D&A&4h&x&8&A&E&0&A&An&x&9&3&E&3&B&0i&x&9&B&E&6&B&6c&x&A&4&E&9&B&Ci&x&A&C&E&C&C&2a&x&B&5&F&0&C&9n
+        &x&B&D&F&3&C&FI&x&C&6&F&6&D&5I&8]&r'
+      short-name: Technician II
+      tag: '&8[&x&6&8&D&3&9&1T&x&7&1&D&6&9&7e&x&7&9&D&9&9&Dc&x&8&2&D&D&A&4h&x&8&A&E&0&A&An&x&9&3&E&3&B&0i&x&9&B&E&6&B&6c&x&A&4&E&9&B&Ci&x&A&C&E&C&C&2a&x&B&5&F&0&C&9n
+        &x&B&D&F&3&C&FI&x&C&6&F&6&D&5I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#17&7.'
+    requirements:
+    - type: MONEY
+      amount: 90000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 24
+      consume: true
+    - type: PLAYTIME
+      amount: 3060
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 17000
+      display:
+      - '&8• &a+17,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fOcelot'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.17
+      - iDisguise.disguise.ocelot
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  technician-3:
+    order: 18
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&6&8&D&3&9&1T&x&7&0&D&6&9&7e&x&7&8&D&9&9&Cc&x&8&0&D&C&A&2h&x&8&7&D&F&A&8n&x&8&F&E&2&A&Di&x&9&7&E&5&B&3c&x&9&F&E&7&B&9i&x&A&7&E&A&B&Ea&x&A&F&E&D&C&4n
+        &x&B&6&F&0&C&AI&x&B&E&F&3&C&FI&x&C&6&F&6&D&5I&8]&r'
+      short-name: Technician III
+      tag: '&8[&x&6&8&D&3&9&1T&x&7&0&D&6&9&7e&x&7&8&D&9&9&Cc&x&8&0&D&C&A&2h&x&8&7&D&F&A&8n&x&8&F&E&2&A&Di&x&9&7&E&5&B&3c&x&9&F&E&7&B&9i&x&A&7&E&A&B&Ea&x&A&F&E&D&C&4n
+        &x&B&6&F&0&C&AI&x&B&E&F&3&C&FI&x&C&6&F&6&D&5I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#18&7.'
+    requirements:
+    - type: MONEY
+      amount: 105000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 26
+      consume: true
+    - type: PLAYTIME
+      amount: 3240
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 18000
+      - keysadmin give %player% rare 1
+      display:
+      - '&8• &a+18,000 &7Claim Blocks'
+      - '&8• &b1× Rare Key'
+      - '&8• &dDisguise &8▸ &fParrot'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.18
+      - iDisguise.disguise.parrot
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  technician-4:
+    order: 19
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&6&8&D&3&9&1T&x&7&1&D&6&9&7e&x&7&9&D&9&9&Dc&x&8&2&D&D&A&4h&x&8&A&E&0&A&An&x&9&3&E&3&B&0i&x&9&B&E&6&B&6c&x&A&4&E&9&B&Ci&x&A&C&E&C&C&2a&x&B&5&F&0&C&9n
+        &x&B&D&F&3&C&FI&x&C&6&F&6&D&5V&8]&r'
+      short-name: Technician IV
+      tag: '&8[&x&6&8&D&3&9&1T&x&7&1&D&6&9&7e&x&7&9&D&9&9&Dc&x&8&2&D&D&A&4h&x&8&A&E&0&A&An&x&9&3&E&3&B&0i&x&9&B&E&6&B&6c&x&A&4&E&9&B&Ci&x&A&C&E&C&C&2a&x&B&5&F&0&C&9n
+        &x&B&D&F&3&C&FI&x&C&6&F&6&D&5V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#19&7.'
+    requirements:
+    - type: MONEY
+      amount: 120000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 28
+      consume: true
+    - type: PLAYTIME
+      amount: 3420
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 19000
+      display:
+      - '&8• &a+19,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fBee'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.19
+      - iDisguise.disguise.bee
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  technician-5:
+    order: 20
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&6&8&D&3&9&1T&x&7&1&D&7&9&8e&x&7&B&D&A&9&Fc&x&8&4&D&E&A&5h&x&8&E&E&1&A&Cn&x&9&7&E&5&B&3i&x&A&0&E&8&B&Ac&x&A&A&E&C&C&1i&x&B&3&E&F&C&7a&x&B&D&F&3&C&En
+        &x&C&6&F&6&D&5V&8]&r'
+      short-name: Technician V
+      tag: '&8[&x&6&8&D&3&9&1T&x&7&1&D&7&9&8e&x&7&B&D&A&9&Fc&x&8&4&D&E&A&5h&x&8&E&E&1&A&Cn&x&9&7&E&5&B&3i&x&A&0&E&8&B&Ac&x&A&A&E&C&C&1i&x&B&3&E&F&C&7a&x&B&D&F&3&C&En
+        &x&C&6&F&6&D&5V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#20&7.'
+    requirements:
+    - type: MONEY
+      amount: 135000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 30
+      consume: true
+    - type: PLAYTIME
+      amount: 3600
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 20000
+      - keysadmin give %player% epic 1
+      display:
+      - '&8• &a+20,000 &7Claim Blocks'
+      - '&8• &d1× Epic Key'
+      - '&8• &dDisguise &8▸ &fArmadillo'
+      - '&8• &e/back &7after death'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.20
+      - iDisguise.disguise.armadillo
+      - essentials.back.ondeath
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  inventor-1:
+    order: 21
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&4&D&9&6&F&FI&x&5&1&A&0&F&En&x&5&5&A&A&F&Ev&x&5&9&B&4&F&De&x&5&E&B&F&F&Cn&x&6&2&C&9&F&Bt&x&6&6&D&3&F&Bo&x&6&A&D&D&F&Ar &x&6&E&E&7&F&9I&8]&r'
+      short-name: Inventor I
+      tag: '&8[&x&4&D&9&6&F&FI&x&5&1&A&0&F&En&x&5&5&A&A&F&Ev&x&5&9&B&4&F&De&x&5&E&B&F&F&Cn&x&6&2&C&9&F&Bt&x&6&6&D&3&F&Bo&x&6&A&D&D&F&Ar &x&6&E&E&7&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#21&7.'
+    requirements:
+    - type: MONEY
+      amount: 160000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 33
+      consume: true
+    - type: PLAYTIME
+      amount: 3780
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 21000
+      display:
+      - '&8• &a+21,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fTurtle'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.21
+      - iDisguise.disguise.turtle
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  inventor-2:
+    order: 22
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&4&D&9&6&F&FI&x&5&1&9&F&F&En&x&5&4&A&8&F&Ev&x&5&8&B&1&F&De&x&5&C&B&A&F&Cn&x&5&F&C&3&F&Ct&x&6&3&C&C&F&Bo&x&6&7&D&5&F&Ar &x&6&A&D&E&F&AI&x&6&E&E&7&F&9I&8]&r'
+      short-name: Inventor II
+      tag: '&8[&x&4&D&9&6&F&FI&x&5&1&9&F&F&En&x&5&4&A&8&F&Ev&x&5&8&B&1&F&De&x&5&C&B&A&F&Cn&x&5&F&C&3&F&Ct&x&6&3&C&C&F&Bo&x&6&7&D&5&F&Ar &x&6&A&D&E&F&AI&x&6&E&E&7&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#22&7.'
+    requirements:
+    - type: MONEY
+      amount: 185000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 36
+      consume: true
+    - type: PLAYTIME
+      amount: 3960
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 22000
+      - keysadmin give %player% rare 2
+      display:
+      - '&8• &a+22,000 &7Claim Blocks'
+      - '&8• &b2× Rare Keys'
+      - '&8• &dDisguise &8▸ &fFrog'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.22
+      - iDisguise.disguise.frog
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  inventor-3:
+    order: 23
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&4&D&9&6&F&FI&x&5&0&9&E&F&En&x&5&4&A&6&F&Ev&x&5&7&A&E&F&De&x&5&A&B&6&F&Dn&x&5&E&B&F&F&Ct&x&6&1&C&7&F&Bo&x&6&4&C&F&F&Br &x&6&7&D&7&F&AI&x&6&B&D&F&F&AI&x&6&E&E&7&F&9I&8]&r'
+      short-name: Inventor III
+      tag: '&8[&x&4&D&9&6&F&FI&x&5&0&9&E&F&En&x&5&4&A&6&F&Ev&x&5&7&A&E&F&De&x&5&A&B&6&F&Dn&x&5&E&B&F&F&Ct&x&6&1&C&7&F&Bo&x&6&4&C&F&F&Br &x&6&7&D&7&F&AI&x&6&B&D&F&F&AI&x&6&E&E&7&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#23&7.'
+    requirements:
+    - type: MONEY
+      amount: 210000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 39
+      consume: true
+    - type: PLAYTIME
+      amount: 4140
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 23000
+      display:
+      - '&8• &a+23,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fTadpole'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.23
+      - iDisguise.disguise.tadpole
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  inventor-4:
+    order: 24
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&4&D&9&6&F&FI&x&5&1&9&F&F&En&x&5&4&A&8&F&Ev&x&5&8&B&1&F&De&x&5&C&B&A&F&Cn&x&5&F&C&3&F&Ct&x&6&3&C&C&F&Bo&x&6&7&D&5&F&Ar &x&6&A&D&E&F&AI&x&6&E&E&7&F&9V&8]&r'
+      short-name: Inventor IV
+      tag: '&8[&x&4&D&9&6&F&FI&x&5&1&9&F&F&En&x&5&4&A&8&F&Ev&x&5&8&B&1&F&De&x&5&C&B&A&F&Cn&x&5&F&C&3&F&Ct&x&6&3&C&C&F&Bo&x&6&7&D&5&F&Ar &x&6&A&D&E&F&AI&x&6&E&E&7&F&9V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#24&7.'
+    requirements:
+    - type: MONEY
+      amount: 235000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 42
+      consume: true
+    - type: PLAYTIME
+      amount: 4320
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 24000
+      display:
+      - '&8• &a+24,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fAxolotl'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.24
+      - iDisguise.disguise.axolotl
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  inventor-5:
+    order: 25
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&4&D&9&6&F&FI&x&5&1&A&0&F&En&x&5&5&A&A&F&Ev&x&5&9&B&4&F&De&x&5&E&B&F&F&Cn&x&6&2&C&9&F&Bt&x&6&6&D&3&F&Bo&x&6&A&D&D&F&Ar &x&6&E&E&7&F&9V&8]&r'
+      short-name: Inventor V
+      tag: '&8[&x&4&D&9&6&F&FI&x&5&1&A&0&F&En&x&5&5&A&A&F&Ev&x&5&9&B&4&F&De&x&5&E&B&F&F&Cn&x&6&2&C&9&F&Bt&x&6&6&D&3&F&Bo&x&6&A&D&D&F&Ar &x&6&E&E&7&F&9V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#25&7.'
+    requirements:
+    - type: MONEY
+      amount: 260000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 45
+      consume: true
+    - type: PLAYTIME
+      amount: 4500
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 25000
+      - keysadmin give %player% rare 2
+      - keysadmin give %player% epic 1
+      display:
+      - '&8• &a+25,000 &7Claim Blocks'
+      - '&8• &b2× Rare Keys'
+      - '&8• &d1× Epic Key'
+      - '&8• &dDisguise &8▸ &fSniffer'
+      - '&8• &e/ext &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.25
+      - iDisguise.disguise.sniffer
+      - essentials.ext
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  skilled-1:
+    order: 26
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&8&B&5&C&F&6S&x&9&8&6&0&F&6k&x&A&6&6&4&F&7i&x&B&3&6&8&F&7l&x&C&0&6&D&F&8l&x&C&D&7&1&F&8e&x&D&B&7&5&F&9d &x&E&8&7&9&F&9I&8]&r'
+      short-name: Skilled I
+      tag: '&8[&x&8&B&5&C&F&6S&x&9&8&6&0&F&6k&x&A&6&6&4&F&7i&x&B&3&6&8&F&7l&x&C&0&6&D&F&8l&x&C&D&7&1&F&8e&x&D&B&7&5&F&9d &x&E&8&7&9&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#26&7.'
+    requirements:
+    - type: MONEY
+      amount: 295000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 49
+      consume: true
+    - type: PLAYTIME
+      amount: 4680
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 26000
+      display:
+      - '&8• &a+26,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fStrider'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.26
+      - iDisguise.disguise.strider
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  skilled-2:
+    order: 27
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&8&B&5&C&F&6S&x&9&7&6&0&F&6k&x&A&2&6&3&F&7i&x&A&E&6&7&F&7l&x&B&A&6&B&F&8l&x&C&5&6&E&F&8e&x&D&1&7&2&F&8d &x&D&C&7&5&F&9I&x&E&8&7&9&F&9I&8]&r'
+      short-name: Skilled II
+      tag: '&8[&x&8&B&5&C&F&6S&x&9&7&6&0&F&6k&x&A&2&6&3&F&7i&x&A&E&6&7&F&7l&x&B&A&6&B&F&8l&x&C&5&6&E&F&8e&x&D&1&7&2&F&8d &x&D&C&7&5&F&9I&x&E&8&7&9&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#27&7.'
+    requirements:
+    - type: MONEY
+      amount: 330000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 53
+      consume: true
+    - type: PLAYTIME
+      amount: 4860
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 27000
+      - keysadmin give %player% epic 1
+      display:
+      - '&8• &a+27,000 &7Claim Blocks'
+      - '&8• &d1× Epic Key'
+      - '&8• &dDisguise &8▸ &fZombie'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.27
+      - iDisguise.disguise.zombie
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  skilled-3:
+    order: 28
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&8&B&5&C&F&6S&x&9&5&5&F&F&6k&x&A&0&6&2&F&7i&x&A&A&6&6&F&7l&x&B&4&6&9&F&7l&x&B&F&6&C&F&8e&x&C&9&6&F&F&8d &x&D&3&7&3&F&8I&x&D&E&7&6&F&9I&x&E&8&7&9&F&9I&8]&r'
+      short-name: Skilled III
+      tag: '&8[&x&8&B&5&C&F&6S&x&9&5&5&F&F&6k&x&A&0&6&2&F&7i&x&A&A&6&6&F&7l&x&B&4&6&9&F&7l&x&B&F&6&C&F&8e&x&C&9&6&F&F&8d &x&D&3&7&3&F&8I&x&D&E&7&6&F&9I&x&E&8&7&9&F&9I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#28&7.'
+    requirements:
+    - type: MONEY
+      amount: 365000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 57
+      consume: true
+    - type: PLAYTIME
+      amount: 5040
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 28000
+      display:
+      - '&8• &a+28,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fSkeleton'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.28
+      - iDisguise.disguise.skeleton
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  skilled-4:
+    order: 29
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&8&B&5&C&F&6S&x&9&7&6&0&F&6k&x&A&2&6&3&F&7i&x&A&E&6&7&F&7l&x&B&A&6&B&F&8l&x&C&5&6&E&F&8e&x&D&1&7&2&F&8d &x&D&C&7&5&F&9I&x&E&8&7&9&F&9V&8]&r'
+      short-name: Skilled IV
+      tag: '&8[&x&8&B&5&C&F&6S&x&9&7&6&0&F&6k&x&A&2&6&3&F&7i&x&A&E&6&7&F&7l&x&B&A&6&B&F&8l&x&C&5&6&E&F&8e&x&D&1&7&2&F&8d &x&D&C&7&5&F&9I&x&E&8&7&9&F&9V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#29&7.'
+    requirements:
+    - type: MONEY
+      amount: 400000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 61
+      consume: true
+    - type: PLAYTIME
+      amount: 5220
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 29000
+      display:
+      - '&8• &a+29,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fSpider'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.29
+      - iDisguise.disguise.spider
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  skilled-5:
+    order: 30
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&8&B&5&C&F&6S&x&9&8&6&0&F&6k&x&A&6&6&4&F&7i&x&B&3&6&8&F&7l&x&C&0&6&D&F&8l&x&C&D&7&1&F&8e&x&D&B&7&5&F&9d &x&E&8&7&9&F&9V&8]&r'
+      short-name: Skilled V
+      tag: '&8[&x&8&B&5&C&F&6S&x&9&8&6&0&F&6k&x&A&6&6&4&F&7i&x&B&3&6&8&F&7l&x&C&0&6&D&F&8l&x&C&D&7&1&F&8e&x&D&B&7&5&F&9d &x&E&8&7&9&F&9V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#30&7.'
+    requirements:
+    - type: MONEY
+      amount: 435000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 65
+      consume: true
+    - type: PLAYTIME
+      amount: 5400
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 30000
+      - keysadmin give %player% epic 2
+      - keysadmin give %player% legendary 1
+      display:
+      - '&8• &a+30,000 &7Claim Blocks'
+      - '&8• &d2× Epic Keys'
+      - '&8• &6&l1× Legendary Key'
+      - '&8• &dDisguise &8▸ &fCave Spider'
+      - '&8• &e/feed &7command'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.30
+      - iDisguise.disguise.cave_spider
+      - essentials.feed
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  pro-1:
+    order: 31
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&E&F&4&4&4&4P&x&F&3&5&3&5&AR&x&F&7&6&2&6&FO &x&F&B&7&1&8&5I&8]&r'
+      short-name: PRO I
+      tag: '&8[&x&E&F&4&4&4&4P&x&F&3&5&3&5&AR&x&F&7&6&2&6&FO &x&F&B&7&1&8&5I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#31&7.'
+    requirements:
+    - type: MONEY
+      amount: 485000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 70
+      consume: true
+    - type: PLAYTIME
+      amount: 5580
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 31000
+      display:
+      - '&8• &a+31,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fCreeper'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.31
+      - iDisguise.disguise.creeper
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  pro-2:
+    order: 32
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&E&F&4&4&4&4P&x&F&2&4&F&5&4R&x&F&5&5&B&6&5O &x&F&8&6&6&7&5I&x&F&B&7&1&8&5I&8]&r'
+      short-name: PRO II
+      tag: '&8[&x&E&F&4&4&4&4P&x&F&2&4&F&5&4R&x&F&5&5&B&6&5O &x&F&8&6&6&7&5I&x&F&B&7&1&8&5I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#32&7.'
+    requirements:
+    - type: MONEY
+      amount: 535000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 75
+      consume: true
+    - type: PLAYTIME
+      amount: 5760
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 32000
+      - keysadmin give %player% epic 1
+      display:
+      - '&8• &a+32,000 &7Claim Blocks'
+      - '&8• &d1× Epic Key'
+      - '&8• &dDisguise &8▸ &fSlime'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.32
+      - iDisguise.disguise.slime
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  pro-3:
+    order: 33
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&E&F&4&4&4&4P&x&F&1&4&D&5&1R&x&F&4&5&6&5&EO &x&F&6&5&F&6&BI&x&F&9&6&8&7&8I&x&F&B&7&1&8&5I&8]&r'
+      short-name: PRO III
+      tag: '&8[&x&E&F&4&4&4&4P&x&F&1&4&D&5&1R&x&F&4&5&6&5&EO &x&F&6&5&F&6&BI&x&F&9&6&8&7&8I&x&F&B&7&1&8&5I&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#33&7.'
+    requirements:
+    - type: MONEY
+      amount: 585000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 80
+      consume: true
+    - type: PLAYTIME
+      amount: 5940
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 33000
+      display:
+      - '&8• &a+33,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fMagma Cube'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.33
+      - iDisguise.disguise.magma_cube
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  pro-4:
+    order: 34
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&E&F&4&4&4&4P&x&F&2&4&F&5&4R&x&F&5&5&B&6&5O &x&F&8&6&6&7&5I&x&F&B&7&1&8&5V&8]&r'
+      short-name: PRO IV
+      tag: '&8[&x&E&F&4&4&4&4P&x&F&2&4&F&5&4R&x&F&5&5&B&6&5O &x&F&8&6&6&7&5I&x&F&B&7&1&8&5V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#34&7.'
+    requirements:
+    - type: MONEY
+      amount: 635000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 85
+      consume: true
+    - type: PLAYTIME
+      amount: 6120
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 34000
+      display:
+      - '&8• &a+34,000 &7Claim Blocks'
+      - '&8• &dDisguise &8▸ &fSilverfish'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.34
+      - iDisguise.disguise.silverfish
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  pro-5:
+    order: 35
+    enabled: true
+    visible: true
+    default: false
+    display:
+      name: '&8[&x&E&F&4&4&4&4P&x&F&3&5&3&5&AR&x&F&7&6&2&6&FO &x&F&B&7&1&8&5V&8]&r'
+      short-name: PRO V
+      tag: '&8[&x&E&F&4&4&4&4P&x&F&3&5&3&5&AR&x&F&7&6&2&6&FO &x&F&B&7&1&8&5V&8]&r'
+      description:
+      - '&7PlexonCraft progression rank &f#35&7.'
+    requirements:
+    - type: MONEY
+      amount: 685000.0
+      consume: true
+    - type: XP_LEVELS
+      amount: 90
+      consume: true
+    - type: PLAYTIME
+      amount: 6300
+      unit: MINUTES
+      consume: false
+    rewards:
+    - type: COMMAND
+      one-time: true
+      commands:
+      - adjustbonusclaimblocks %player% 35000
+      - keysadmin give %player% epic 3
+      - keysadmin give %player% legendary 2
+      display:
+      - '&8• &a+35,000 &7Claim Blocks'
+      - '&8• &d3× Epic Keys'
+      - '&8• &6&l2× Legendary Keys'
+      - '&8• &dDisguise &8▸ &fEndermite'
+      - '&8• &6Keep XP &7on death'
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - rank.35
+      - iDisguise.disguise.endermite
+      - essentials.keepxp
+      display: []
+    announce: true
+    menu:
+      use-global-template: false
+      name: '%rank_name%'
+      lore:
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      - '&7Status: %status%'
+      - ''
+      - '&f&lRequirements'
+      - '&8• &7Money: &e$%money%'
+      - '&8• &7XP Levels: &e%xp%'
+      - '&8• &7Playtime: &e%playtime% min'
+      - ''
+      - '&f&lRewards'
+      - '%rewards%'
+      - ''
+      - '&8Rank ID: &7%rank_id%'
+      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'

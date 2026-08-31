@@ -1,0 +1,60 @@
+schema-version: 1
+
+plugin:
+  language: en
+  debug: false
+
+formatting:
+  minimessage: true
+  legacy-ampersand-support: true
+
+rankup:
+  cooldown-ms: 750
+  prevent-concurrent: true
+  right-click-next-rank: true
+
+permissions:
+  cumulative: true
+  reconcile-on-join: true
+
+storage:
+  type: SQLITE
+  sqlite:
+    file: database.db
+
+integrations:
+  vault: true
+  luckperms: true
+  placeholderapi: true
+  discordsrv: false
+
+broadcast:
+  enabled: true
+
+feedback:
+  chat: true
+  title: true
+  sound: true
+  broadcast: true
+
+sounds:
+  rankup:
+    sound: UI_TOAST_CHALLENGE_COMPLETE
+    volume: 1.0
+    pitch: 1.0
+  denied:
+    sound: BLOCK_NOTE_BLOCK_BASS
+    volume: 0.8
+    pitch: 0.8
+
+discord:
+  game-channel: global
+  message: "**%player%** ranked up to **%rank_short_name%**!"
+
+backup:
+  enabled: true
+  keep: 10
+
+join:
+  missing-rank-fallback: FIRST
+

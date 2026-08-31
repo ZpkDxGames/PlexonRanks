@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    branches: ['main']
+    tags: ['v*']
+    paths: ['.github/workflows/release.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Test and package
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+          else
+            RELEASE_TAG="v1.0.0"
+          fi
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists; leaving it unchanged."
+            exit 0
+          fi
+
+          gh release create "${RELEASE_TAG}" \
+            target/PlexonRanks-*.jar \
+            --target "${GITHUB_SHA}" \
+            --title "PlexonRanks ${RELEASE_TAG#v}" \
+            --generate-notes \
+            --latest

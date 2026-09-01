@@ -5,13 +5,14 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -56,21 +57,30 @@ public final class TextFormatter {
         if (placeholders.isEmpty()) {
             return component(template);
         }
+        if (!miniMessageSupport) {
+            Component result = component(template);
+            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                String placeholder = normalizedPlaceholder(entry.getKey());
+                result = result.replaceText(TextReplacementConfig.builder()
+                        .matchLiteral(placeholder)
+                        .replacement(component(entry.getValue()))
+                        .build());
+            }
+            return result;
+        }
+
         String tokenized = template == null ? "" : template;
-        Map<String, String> tokens = new LinkedHashMap<>();
+        TagResolver.Builder resolver = TagResolver.builder();
         int index = 0;
         for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-            String placeholder = entry.getKey().startsWith("%") ? entry.getKey() : "%" + entry.getKey() + "%";
-            String token = "\uE000" + index++ + "\uE001";
-            tokenized = tokenized.replace(placeholder, token);
-            tokens.put(token, entry.getValue() == null ? "" : entry.getValue());
+            String placeholder = normalizedPlaceholder(entry.getKey());
+            String tag = "plexonph" + index++;
+            tokenized = tokenized.replace(placeholder, "<" + tag + ">");
+            resolver.resolver(Placeholder.component(tag, component(entry.getValue())));
         }
-        Component result = component(tokenized);
-        for (Map.Entry<String, String> entry : tokens.entrySet()) {
-            result = result.replaceText(TextReplacementConfig.builder()
-                    .matchLiteral(entry.getKey())
-                    .replacement(component(entry.getValue()))
-                    .build());
+        Component result = miniMessage.deserialize(tokenized, resolver.build());
+        if (legacySupport) {
+            result = deserializeLegacyText(result);
         }
         return result;
     }
@@ -136,10 +146,14 @@ public final class TextFormatter {
     public static String replaceRaw(String input, Map<String, String> placeholders) {
         String rendered = input == null ? "" : input;
         for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-            String key = entry.getKey().startsWith("%") ? entry.getKey() : "%" + entry.getKey() + "%";
+            String key = normalizedPlaceholder(entry.getKey());
             rendered = rendered.replace(key, entry.getValue() == null ? "" : entry.getValue());
         }
         return rendered;
+    }
+
+    private static String normalizedPlaceholder(String key) {
+        return key.startsWith("%") ? key : "%" + key + "%";
     }
 
     private Component deserializeLegacyText(Component component) {

@@ -44,9 +44,29 @@ class TextAndListExpansionTest {
     }
 
     @Test
+    void componentPlaceholderInsideGradientDoesNotLeakInternalToken() {
+        TextFormatter formatter = new TextFormatter(true, true);
+
+        var broadcast = formatter.component(
+                "<gradient:#4158D0:#C850C0><bold>%player%</bold></gradient> <gray>advanced to</gray> %rank_name%<gray>!</gray>",
+                Map.of("player", "Tonim", "rank_name", "&8[&7Newbie II&8]&r"));
+
+        assertEquals("Tonim advanced to [Newbie II]!", formatter.plain(broadcast));
+    }
+
+    @Test
     void legacyFallbackAlsoWorksInDirectMiniMessageText() {
         TextFormatter formatter = new TextFormatter(true, true);
         assertEquals("Label: Value", formatter.plain(formatter.component("<gray>Label:</gray> &eValue")));
+    }
+
+    @Test
+    void componentPlaceholdersStillWorkWhenMiniMessageIsDisabled() {
+        TextFormatter formatter = new TextFormatter(false, true);
+
+        var component = formatter.component("&7Rank: %rank%", Map.of("rank", "&aNewbie II"));
+
+        assertEquals("Rank: Newbie II", formatter.plain(component));
     }
 
     @Test

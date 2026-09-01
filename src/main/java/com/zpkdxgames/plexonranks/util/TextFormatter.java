@@ -8,14 +8,19 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class TextFormatter {
     private static final Pattern LEGACY = Pattern.compile("(?i)&(?:[0-9A-FK-OR]|x&)");
+    private static final Pattern PERSISTENT_NEGATED_DECORATION = Pattern.compile(
+            "(?i)(?<!\\\\)<(/)?(!(?:bold|b|italic|i|underlined|u|strikethrough|st|obfuscated|obf))>");
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final MiniMessage strictMiniMessage = MiniMessage.builder().strict(true).build();
     private final LegacyComponentSerializer legacy = LegacyComponentSerializer.builder()
@@ -97,7 +102,7 @@ public final class TextFormatter {
     public boolean valid(String input) {
         try {
             if (miniMessageSupport && input != null && !input.isEmpty()) {
-                strictMiniMessage.deserialize(input);
+                strictMiniMessage.deserialize(closePersistentNegatedDecorations(input));
             } else if (legacySupport && input != null) {
                 legacy.deserialize(input);
             }
@@ -105,6 +110,27 @@ public final class TextFormatter {
         } catch (RuntimeException exception) {
             return false;
         }
+    }
+
+    private static String closePersistentNegatedDecorations(String input) {
+        Matcher matcher = PERSISTENT_NEGATED_DECORATION.matcher(input);
+        Deque<String> openTags = new ArrayDeque<>();
+        while (matcher.find()) {
+            String tag = matcher.group(2);
+            if (matcher.group(1) == null) {
+                openTags.addLast(tag);
+            } else if (!openTags.isEmpty() && openTags.peekLast().equalsIgnoreCase(tag)) {
+                openTags.removeLast();
+            }
+        }
+        if (openTags.isEmpty()) {
+            return input;
+        }
+        StringBuilder normalized = new StringBuilder(input);
+        while (!openTags.isEmpty()) {
+            normalized.append("</").append(openTags.removeLast()).append('>');
+        }
+        return normalized.toString();
     }
 
     public static String replaceRaw(String input, Map<String, String> placeholders) {

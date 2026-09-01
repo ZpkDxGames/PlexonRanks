@@ -1,6 +1,7 @@
 package com.zpkdxgames.plexonranks.config;
 
 import com.zpkdxgames.plexonranks.model.ValidationIssue;
+import com.zpkdxgames.plexonranks.util.TextFormatter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +27,24 @@ class BundledConfigurationTest {
                 .anyMatch(issue -> issue.severity() == ValidationIssue.Severity.ERROR),
                 () -> "Bundled ranks contain errors: " + result.issues());
         assertTrue(result.ranks().stream().allMatch(rank -> rank.menu().useGlobalTemplate()));
+    }
+
+    @Test
+    void bundledConfigurationPassesTheSameValidationUsedAtStartup() {
+        YamlConfiguration config = load("config.yml");
+        YamlConfiguration ranksYaml = load("ranks.yml");
+        YamlConfiguration menus = load("menus.yml");
+        YamlConfiguration messages = load("messages.yml");
+        RankParser.ParseResult parsed = new RankParser().parse(ranksYaml);
+        TextFormatter formatter = new TextFormatter(
+                config.getBoolean("formatting.minimessage", true),
+                config.getBoolean("formatting.legacy-ampersand-support", true));
+
+        List<ValidationIssue> issues = new ConfigurationValidator().validate(
+                config, ranksYaml, menus, messages, parsed.ranks(), formatter);
+
+        assertFalse(issues.stream().anyMatch(issue -> issue.severity() == ValidationIssue.Severity.ERROR),
+                () -> "Bundled configuration fails startup validation: " + issues);
     }
 
     private static YamlConfiguration load(String name) {

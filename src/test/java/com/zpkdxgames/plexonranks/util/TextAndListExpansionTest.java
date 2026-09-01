@@ -53,6 +53,9 @@ class TextAndListExpansionTest {
     void strictValidationRejectsUnclosedFormattingButAllowsUsageArguments() {
         TextFormatter formatter = new TextFormatter(true, true);
         assertFalse(formatter.valid("<gradient:#4158D0:#C850C0>Broken"));
+        assertFalse(formatter.valid("<!italic><gradient:#4158D0:#C850C0>Broken"));
+        assertTrue(formatter.valid("<!italic><gray>Item lore</gray>"));
+        assertTrue(formatter.valid("<!italic><!bold>Item name"));
         assertTrue(formatter.valid("<yellow>/rank <player></yellow>"));
     }
 }

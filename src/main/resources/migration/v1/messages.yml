@@ -1,0 +1,69 @@
+schema-version: 1
+prefix: "<dark_gray>[</dark_gray><gradient:#FFE98A:#FFB84D><bold>PlexonRanks</bold></gradient><dark_gray>]</dark_gray> "
+
+generic:
+  no-permission: "<red>You do not have permission to do that.</red>"
+  players-only: "<red>This command can only be used by a player.</red>"
+  player-not-found: "<red>Player <white>%player%</white> was not found.</red>"
+  data-loading: "<yellow>Your rank data is still loading. Try again in a moment.</yellow>"
+  database-error: "<red>Your request could not be saved safely. Nothing was awarded.</red>"
+  invalid-number: "<red>That page or amount is invalid.</red>"
+
+rank:
+  lines:
+    - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+    - "<gradient:#FFE98A:#FFB84D><bold>PLEXON RANK</bold></gradient>"
+    - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+    - ""
+    - "<gray>Player:</gray> <white>%player%</white>"
+    - "<gray>Current:</gray> %player_rank%"
+    - "<gray>Next:</gray> %next_rank%"
+    - ""
+    - "<white><bold>Requirements</bold></white>"
+    - "%requirements%"
+    - ""
+    - "<white><bold>Next Rank Rewards</bold></white>"
+    - "%rewards%"
+    - ""
+    - "<gray>Use <yellow>/rankup</yellow> once every requirement is complete.</gray>"
+    - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+  max-lines:
+    - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+    - "<gradient:#FFE98A:#FFB84D><bold>PLEXON RANK</bold></gradient>"
+    - "<gray>You have reached the final rank:</gray> %player_rank%"
+    - "<gradient:#FFE98A:#FFB84D><bold>Progression complete!</bold></gradient>"
+    - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+
+rankup:
+  success: "<green>Rank upgraded to</green> %rank_name%<green>!</green>"
+  broadcast: "<yellow>%player%</yellow> <gray>ranked up to</gray> %rank_name%<gray>!</gray>"
+  max-rank: "<yellow>You have reached the maximum rank.</yellow>"
+  requirements-not-met: "<red>You do not meet every requirement yet.</red>"
+  already-processing: "<yellow>A rank-up is already being processed for you.</yellow>"
+  cooldown: "<yellow>Please wait before trying to rank up again.</yellow>"
+  cancelled: "<red>Your rank-up was cancelled by another plugin.</red>"
+  reward-error: "<yellow>Your rank was saved, but one or more rewards need administrator review. Staff have been notified.</yellow>"
+  title: "<gradient:#FFE98A:#FFB84D><bold>RANK UP!</bold></gradient>"
+  subtitle: "%rank_name%"
+
+admin:
+  reload-success: "<green>Configuration reloaded atomically. Loaded <white>%ranks%</white> ranks.</green>"
+  reload-failed: "<red>Reload rejected; the live configuration was not changed.</red>"
+  validate-success: "<green>Validation passed with no errors.</green>"
+  validate-header: "<yellow>Validation found %errors% error(s) and %warnings% warning(s):</yellow>"
+  setrank-success: "<green>Set <white>%player%</white> from %old_rank% <green>to</green> %new_rank%<green>.</green>"
+  sync-success: "<green>Persistent rewards were synchronized for <white>%player%</white>.</green>"
+  backup-success: "<green>Backup created:</green> <white>%file%</white>"
+  backup-failed: "<red>The backup could not be created. Check the console.</red>"
+  unknown-rank: "<red>Unknown or disabled rank: <white>%rank%</white>.</red>"
+  reset-confirm: "<yellow>Run <white>/plexonranks resetrank %player% confirm</white> within 30 seconds to confirm.</yellow>"
+  reset-success: "<green>Reset <white>%player%</white> to %rank_name%<green>.</green>"
+  editor-chat-prompt: "<yellow>Type the new value in chat, or <white>cancel</white>. The prompt expires in 60 seconds.</yellow>"
+  editor-saved: "<green>Rank configuration saved and reloaded.</green>"
+  editor-save-failed: "<red>The edit was not saved because validation failed.</red>"
+
+menu:
+  next-click: "<gray>Left-click for details. Right-click to attempt this rank.</gray>"
+  editor-hint:
+    - "<gray>Left-click:</gray> <white>Edit</white>"
+    - "<gray>Shift-left:</gray> <white>Enable/disable</white>"

@@ -37,7 +37,12 @@ public final class RankConfigEditor {
 
     public EditResult swapOrder(String rankId, int direction) {
         Rank current = configs.current().registry().byId(rankId).orElseThrow();
-        Rank target = configs.current().registry().shift(current, direction).orElse(current);
+        List<Rank> configured = configs.current().registry().all().stream()
+                .sorted(java.util.Comparator.comparingInt(Rank::order))
+                .toList();
+        int currentIndex = configured.indexOf(current);
+        int targetIndex = Math.max(0, Math.min(configured.size() - 1, currentIndex + direction));
+        Rank target = configured.get(targetIndex);
         if (target.id().equals(current.id())) return new EditResult(true, List.of());
         return mutate(yaml -> {
             yaml.set("ranks." + current.id() + ".order", target.order());
@@ -53,7 +58,7 @@ public final class RankConfigEditor {
         if (configs.current().registry().byId(id).isPresent()) {
             return new EditResult(false, List.of("That rank ID already exists."));
         }
-        int order = configs.current().registry().ordered().stream().mapToInt(Rank::order).max().orElse(-1) + 1;
+        int order = configs.current().registry().all().stream().mapToInt(Rank::order).max().orElse(-1) + 1;
         return mutate(yaml -> {
             String base = "ranks." + id;
             yaml.set(base + ".order", order);
@@ -76,7 +81,7 @@ public final class RankConfigEditor {
         if (!VALID_ID.matcher(id).matches() || configs.current().registry().byId(id).isPresent()) {
             return new EditResult(false, List.of("Choose a unique ID matching " + VALID_ID.pattern()));
         }
-        int order = configs.current().registry().ordered().stream().mapToInt(Rank::order).max().orElse(-1) + 1;
+        int order = configs.current().registry().all().stream().mapToInt(Rank::order).max().orElse(-1) + 1;
         return mutate(yaml -> {
             ConfigurationSection source = yaml.getConfigurationSection("ranks." + sourceId);
             if (source == null) throw new IllegalArgumentException("Unknown rank: " + sourceId);
@@ -155,4 +160,3 @@ public final class RankConfigEditor {
         }
     }
 }
-

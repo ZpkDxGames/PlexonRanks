@@ -5,10 +5,12 @@ import com.zpkdxgames.plexonranks.database.DatabaseManager;
 import com.zpkdxgames.plexonranks.model.PlayerRankData;
 import com.zpkdxgames.plexonranks.model.Rank;
 import com.zpkdxgames.plexonranks.reward.RewardEngine;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,7 +60,7 @@ public final class RankService {
 
     public Optional<Rank> current(UUID uuid) {
         PlayerRankData data = cache.get(uuid);
-        return data == null ? Optional.empty() : configs.current().registry().byId(data.rankId());
+        return data == null ? Optional.empty() : configs.current().registry().byId(data.rankId()).filter(Rank::enabled);
     }
 
     public Optional<Rank> next(Player player) {
@@ -94,14 +96,31 @@ public final class RankService {
     public void unloadLater(Player player) {
         UUID uuid = player.getUniqueId();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline() && !loading.containsKey(uuid)) {
+            if (Bukkit.getPlayer(uuid) == null && !loading.containsKey(uuid)) {
                 cache.remove(uuid);
             }
         }, 40L);
     }
 
+    public void repairCachedRanks() {
+        String fallback = configs.current().config().getString("join.missing-rank-fallback", "FAIL");
+        Rank defaultRank = configs.current().registry().defaultRank();
+        for (PlayerRankData data : List.copyOf(cache.values())) {
+            boolean available = configs.current().registry().byId(data.rankId()).filter(Rank::enabled).isPresent();
+            if (available) continue;
+            plugin.getLogger().warning("Cached player " + data.uuid() + " references unavailable rank '"
+                    + data.rankId() + "'. Fallback: " + fallback);
+            if ("FIRST".equalsIgnoreCase(fallback)) {
+                database.forceSetRank(data.uuid(), defaultRank.id()).whenComplete((repaired, error) -> {
+                    if (error == null) cache.put(data.uuid(), repaired);
+                    else plugin.getLogger().severe("Could not repair cached rank for " + data.uuid() + ": " + error.getMessage());
+                });
+            }
+        }
+    }
+
     private CompletableFuture<PlayerRankData> repairMissingRank(PlayerRankData data) {
-        if (configs.current().registry().byId(data.rankId()).isPresent()) {
+        if (configs.current().registry().byId(data.rankId()).filter(Rank::enabled).isPresent()) {
             return CompletableFuture.completedFuture(data);
         }
         String behavior = configs.current().config().getString("join.missing-rank-fallback", "FAIL");

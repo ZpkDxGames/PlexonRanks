@@ -6,6 +6,8 @@ import com.zpkdxgames.plexonranks.model.ValidationIssue;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,5 +74,37 @@ class RankParserTest {
         RankParser.ParseResult result = new RankParser().parse(yaml);
         assertTrue(result.issues().stream().filter(issue -> issue.severity() == ValidationIssue.Severity.ERROR).count() >= 2);
     }
-}
 
+    @Test
+    void rejectsUnsafeAmountsOperatorsUnitsAndRewardPayloads() throws Exception {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.loadFromString("""
+                ranks:
+                  start:
+                    order: 0
+                    default: true
+                    requirements: []
+                    rewards: []
+                  broken:
+                    order: 1
+                    requirements:
+                      - {type: MONEY, amount: NaN}
+                      - {type: PLAYTIME, amount: 1, unit: WEEKS}
+                      - {type: PLACEHOLDER, placeholder: '%quests%', operator: APPROX, amount: 1}
+                    rewards:
+                      - type: COMMAND
+                        commands: ['']
+                      - {type: ITEM, material: '', amount: 0}
+                """);
+
+        RankParser.ParseResult result = new RankParser().parse(yaml);
+        List<String> messages = result.issues().stream().map(ValidationIssue::message).toList();
+
+        assertTrue(messages.stream().anyMatch(message -> message.contains("finite")));
+        assertTrue(messages.stream().anyMatch(message -> message.contains("Playtime unit")));
+        assertTrue(messages.stream().anyMatch(message -> message.contains("placeholder operator")));
+        assertTrue(messages.stream().anyMatch(message -> message.contains("blank or multiline")));
+        assertTrue(messages.stream().anyMatch(message -> message.contains("missing material")));
+        assertTrue(messages.stream().anyMatch(message -> message.contains("greater than zero")));
+    }
+}

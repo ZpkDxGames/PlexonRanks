@@ -215,15 +215,16 @@ public final class RewardEngine {
             }
             ItemStack item = new ItemStack(material, Math.max(1, Math.min(64, reward.integer("amount", 1))));
             ItemMeta meta = item.getItemMeta();
+            TextFormatter text = formatter.get();
             String name = reward.string("name", "");
             if (!name.isBlank()) {
-                meta.displayName(formatter.get().component(name, placeholders));
+                meta.displayName(text.withoutItalics(text.component(name, placeholders)));
             }
             Object loreValue = reward.options().get("lore");
             if (loreValue instanceof List<?> lore) {
                 List<Component> components = lore.stream()
                         .map(String::valueOf)
-                        .map(line -> formatter.get().component(line, placeholders))
+                        .map(line -> text.withoutItalics(text.component(line, placeholders)))
                         .toList();
                 meta.lore(components);
             }

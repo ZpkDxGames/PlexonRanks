@@ -1,8 +1,9 @@
-# PlexonRanks 1.0 default progression ladder
+# PlexonRanks 2.0 default progression ladder
 # Converted faithfully from the supplied Rankup 1.2 Fixer template.
 # Stable IDs are used for storage; order controls progression.
-# Legacy '&' and '&x' colors remain supported by formatting.legacy-ampersand-support.
-schema-version: 1
+# Rank identities preserve the supplied legacy gradients while every shared layout
+# is rendered through the MiniMessage-first 2.0 component pipeline.
+schema-version: 2
 ranks:
   unranked:
     order: 0
@@ -19,17 +20,8 @@ ranks:
     rewards: []
     announce: false
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&7Your progression starts here.'
-      - '&7Use &e/rankup &7to begin climbing.'
-      - ''
-      - '&8Rank ID: &70'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-1:
     order: 1
     enabled: true
@@ -70,22 +62,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-2:
     order: 2
     enabled: true
@@ -128,22 +106,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-3:
     order: 3
     enabled: true
@@ -184,22 +148,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-4:
     order: 4
     enabled: true
@@ -242,22 +192,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-5:
     order: 5
     enabled: true
@@ -300,22 +236,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-6:
     order: 6
     enabled: true
@@ -355,22 +277,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-7:
     order: 7
     enabled: true
@@ -412,22 +320,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-8:
     order: 8
     enabled: true
@@ -468,22 +362,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-9:
     order: 9
     enabled: true
@@ -524,22 +404,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   newbie-10:
     order: 10
     enabled: true
@@ -582,22 +448,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   tinkerer-1:
     order: 11
     enabled: true
@@ -638,22 +490,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   tinkerer-2:
     order: 12
     enabled: true
@@ -696,22 +534,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   tinkerer-3:
     order: 13
     enabled: true
@@ -750,22 +574,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   tinkerer-4:
     order: 14
     enabled: true
@@ -804,22 +614,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   tinkerer-5:
     order: 15
     enabled: true
@@ -862,22 +658,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   technician-1:
     order: 16
     enabled: true
@@ -918,22 +700,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   technician-2:
     order: 17
     enabled: true
@@ -974,22 +742,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   technician-3:
     order: 18
     enabled: true
@@ -1032,22 +786,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   technician-4:
     order: 19
     enabled: true
@@ -1088,22 +828,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   technician-5:
     order: 20
     enabled: true
@@ -1148,22 +874,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   inventor-1:
     order: 21
     enabled: true
@@ -1202,22 +914,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   inventor-2:
     order: 22
     enabled: true
@@ -1258,22 +956,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   inventor-3:
     order: 23
     enabled: true
@@ -1312,22 +996,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   inventor-4:
     order: 24
     enabled: true
@@ -1366,22 +1036,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   inventor-5:
     order: 25
     enabled: true
@@ -1426,22 +1082,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   skilled-1:
     order: 26
     enabled: true
@@ -1480,22 +1122,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   skilled-2:
     order: 27
     enabled: true
@@ -1536,22 +1164,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   skilled-3:
     order: 28
     enabled: true
@@ -1590,22 +1204,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   skilled-4:
     order: 29
     enabled: true
@@ -1644,22 +1244,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   skilled-5:
     order: 30
     enabled: true
@@ -1704,22 +1290,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   pro-1:
     order: 31
     enabled: true
@@ -1758,22 +1330,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   pro-2:
     order: 32
     enabled: true
@@ -1814,22 +1372,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   pro-3:
     order: 33
     enabled: true
@@ -1868,22 +1412,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   pro-4:
     order: 34
     enabled: true
@@ -1922,22 +1452,8 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   pro-5:
     order: 35
     enabled: true
@@ -1982,19 +1498,5 @@ ranks:
       display: []
     announce: true
     menu:
-      use-global-template: false
+      use-global-template: true
       name: '%rank_name%'
-      lore:
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-      - '&7Status: %status%'
-      - ''
-      - '&f&lRequirements'
-      - '&8• &7Money: &e$%money%'
-      - '&8• &7XP Levels: &e%xp%'
-      - '&8• &7Playtime: &e%playtime% min'
-      - ''
-      - '&f&lRewards'
-      - '%rewards%'
-      - ''
-      - '&8Rank ID: &7%rank_id%'
-      - '&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━'

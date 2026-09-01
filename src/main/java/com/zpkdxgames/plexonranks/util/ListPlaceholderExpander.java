@@ -8,18 +8,18 @@ public final class ListPlaceholderExpander {
     private ListPlaceholderExpander() {
     }
 
-    public static List<String> expand(List<String> template, Map<String, String> scalarPlaceholders,
-                                      Map<String, List<String>> listPlaceholders) {
+    public static List<String> expand(List<String> template, Map<String, List<String>> listPlaceholders) {
         List<String> result = new ArrayList<>();
         for (String line : template) {
             List<String> replacement = listPlaceholders.get(line);
             if (replacement != null) {
                 result.addAll(replacement);
             } else {
-                result.add(TextFormatter.replaceRaw(line, scalarPlaceholders));
+                // Scalar placeholders deliberately remain unresolved here. TextFormatter replaces
+                // them as Components later, allowing MiniMessage templates and legacy values to mix.
+                result.add(line);
             }
         }
         return List.copyOf(result);
     }
 }
-

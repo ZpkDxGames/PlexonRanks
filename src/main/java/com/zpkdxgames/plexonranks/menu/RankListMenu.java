@@ -20,7 +20,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,13 +65,20 @@ public final class RankListMenu implements Listener {
     private void draw(Player player, RankListHolder holder, Inventory inventory, List<Rank> visible, List<Integer> slots) {
         fill(inventory);
         holder.clearRanks();
+        List<Integer> usableSlots = slots.stream()
+                .filter(slot -> slot >= 0 && slot < inventory.getSize())
+                .toList();
+        int pages = usableSlots.isEmpty() ? 1
+                : Math.max(1, (int) Math.ceil(visible.size() / (double) usableSlots.size()));
+        int page = Math.max(1, Math.min(pages, holder.page()));
+        holder.pagination(page, pages);
         Rank current = ranks.current(player.getUniqueId()).orElse(configs.current().registry().defaultRank());
         Optional<Rank> next = configs.current().registry().nextAccessible(current, player::hasPermission);
-        int offset = (holder.page() - 1) * slots.size();
-        for (int index = 0; index < slots.size() && offset + index < visible.size(); index++) {
+        int offset = (holder.page() - 1) * usableSlots.size();
+        for (int index = 0; index < usableSlots.size() && offset + index < visible.size(); index++) {
             Rank rank = visible.get(offset + index);
             RankState state = state(current, next, rank);
-            int slot = slots.get(index);
+            int slot = usableSlots.get(index);
             inventory.setItem(slot, rankItem(player, current, rank, state));
             holder.rank(slot, rank.id(), state);
         }
@@ -93,12 +99,8 @@ public final class RankListMenu implements Listener {
                 : rank.menu().lore();
         List<RequirementProgress> progress = render.progress(player, rank);
         Map<String, String> values = render.placeholders(player, current, rank, progress, state);
-        List<String> expanded = render.expand(lore, values, render.requirementLines(progress), render.rewardLines(rank));
-        if (state == RankState.NEXT) {
-            expanded = new ArrayList<>(expanded);
-            expanded.add("");
-            expanded.add(configs.current().messages().getString("menu.next-click", ""));
-        }
+        List<String> expanded = render.expand(lore, rank, state,
+                render.requirementLines(progress), render.rewardLines(rank));
         return MenuItems.create(configs.formatter(), material, rank.menu().amount(), name, expanded, glow,
                 rank.menu().customModelData(), values);
     }
@@ -146,7 +148,8 @@ public final class RankListMenu implements Listener {
         int slot = event.getRawSlot();
         String rankId = holder.rankAt(slot);
         if (rankId != null) {
-            if (holder.stateAt(slot) == RankState.NEXT && event.isRightClick()) {
+            if (holder.stateAt(slot) == RankState.NEXT && event.isRightClick()
+                    && configs.current().config().getBoolean("rankup.right-click-next-rank", true)) {
                 player.closeInventory();
                 rankup.attempt(player);
             }
@@ -169,11 +172,7 @@ public final class RankListMenu implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent event) {
-        if (refreshTask != null && Bukkit.getOnlinePlayers().stream()
-                .noneMatch(player -> player.getOpenInventory().getTopInventory().getHolder() instanceof RankListHolder)) {
-            refreshTask.cancel();
-            refreshTask = null;
-        }
+        if (refreshTask != null) Bukkit.getScheduler().runTask(plugin, this::stopRefreshWhenUnused);
     }
 
     public void stop() {
@@ -194,6 +193,14 @@ public final class RankListMenu implements Listener {
                 }
             }
         }, interval, interval);
+    }
+
+    private void stopRefreshWhenUnused() {
+        if (refreshTask != null && Bukkit.getOnlinePlayers().stream()
+                .noneMatch(player -> player.getOpenInventory().getTopInventory().getHolder() instanceof RankListHolder)) {
+            refreshTask.cancel();
+            refreshTask = null;
+        }
     }
 
     private List<Integer> rankSlots() {

@@ -1,101 +1,135 @@
-schema-version: 1
+# PlexonRanks 2.0 — player and administration inventories
+schema-version: 2
 
 rank-list:
-  title: "<gradient:#FFE98A:#FFB84D><bold>Plexon Ranks</bold></gradient> <dark_gray>•</dark_gray> <gray>Page %page%/%pages%</gray>"
+  title: "<gradient:#4158D0:#C850C0><bold>Plexon Ranks</bold></gradient> <dark_gray>•</dark_gray> <gray>%page%/%pages%</gray>"
   size: 54
   refresh:
     enabled: true
-    interval-ticks: 40
+    interval-ticks: 60
   rank-slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34]
+
   rank-template:
     material: PAPER
     amount: 1
     glow: false
-    name: "%rank_name%"
+    name: "<!italic>%rank_name%"
     lore:
-      - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
-      - "<gray>Status:</gray> %status%"
+      - "<!italic><dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+      - "<!italic>%status_icon% %status%"
+      - "<!italic><dark_gray>Rank #%rank_order% <gray>•</gray> %rank_id%</dark_gray>"
       - ""
-      - "<white><bold>Requirements</bold></white>"
+      - "%description%"
+      - ""
+      - "<!italic><gradient:#4158D0:#6C73E8><bold>REQUIREMENTS</bold></gradient>"
       - "%requirements%"
       - ""
-      - "<white><bold>Rewards</bold></white>"
+      - "<!italic><gradient:#C850C0:#FF7EB3><bold>REWARDS</bold></gradient>"
       - "%rewards%"
       - ""
-      - "<dark_gray>Rank #%rank_order%</dark_gray>"
-      - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+      - "%state_details%"
+      - "<!italic><dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
+
+  empty:
+    requirements:
+      - "<!italic><dark_gray>•</dark_gray> <gray>No requirements</gray>"
+    rewards:
+      - "<!italic><dark_gray>•</dark_gray> <gray>No rewards</gray>"
+
   states:
     completed:
       material: LIME_STAINED_GLASS_PANE
       glow: false
+      icon: "<green>✔</green>"
       status: "<green><bold>COMPLETED</bold></green>"
+      lore:
+        - "<!italic><gray>This rank is part of your completed journey.</gray>"
     current:
       material: LIGHT_BLUE_STAINED_GLASS_PANE
       glow: true
+      icon: "<aqua>◆</aqua>"
       status: "<aqua><bold>CURRENT</bold></aqua>"
+      lore:
+        - "<!italic><aqua>You are currently at this rank.</aqua>"
     next:
       material: YELLOW_STAINED_GLASS_PANE
       glow: true
+      icon: "<yellow>➜</yellow>"
       status: "<yellow><bold>NEXT</bold></yellow>"
+      lore:
+        - "<!italic><yellow><bold>RIGHT-CLICK</bold></yellow> <gray>to attempt this rank.</gray>"
+        - "<!italic><dark_gray>Use /rank for a complete progress report.</dark_gray>"
     locked:
       material: RED_STAINED_GLASS_PANE
       glow: false
+      icon: "<red>✖</red>"
       status: "<red><bold>LOCKED</bold></red>"
+      lore:
+        - "<!italic><gray>Complete the earlier ranks to unlock this.</gray>"
     max:
       material: NETHER_STAR
       glow: true
+      icon: "<gradient:#FFE98A:#FFB84D>★</gradient>"
       status: "<gradient:#FFE98A:#FFB84D><bold>MAX RANK</bold></gradient>"
+      lore:
+        - "<!italic><gradient:#FFE98A:#FFB84D>You completed the entire progression!</gradient>"
+
   filler:
     enabled: true
     material: GRAY_STAINED_GLASS_PANE
     name: " "
+
   navigation:
     previous:
       slot: 45
       material: ARROW
-      name: "<yellow>Previous Page</yellow>"
-      lore: ["<gray>Open page %previous_page%.</gray>"]
-    info:
-      slot: 49
-      material: NETHER_STAR
-      name: "<gradient:#FFE98A:#FFB84D><bold>Your Progress</bold></gradient>"
+      name: "<!italic><yellow>← Previous Page</yellow>"
       lore:
-        - "<gray>Current:</gray> %player_rank%"
-        - "<gray>Next:</gray> %next_rank%"
-        - "<gray>Overall:</gray> <yellow>%progress_percent%%</yellow>"
+        - "<!italic><gray>Open page <white>%previous_page%</white>.</gray>"
+    info:
+      slot: 48
+      material: EXPERIENCE_BOTTLE
+      glow: true
+      name: "<!italic><gradient:#4158D0:#C850C0><bold>Your Progress</bold></gradient>"
+      lore:
+        - "<!italic><gray>Current</gray> <dark_gray>›</dark_gray> %player_rank%"
+        - "<!italic><gray>Next</gray> <dark_gray>›</dark_gray> %next_rank%"
+        - ""
+        - "<!italic>%progress_bar% <white>%progress_percent%%</white>"
     close:
-      slot: 50
+      slot: 49
       material: BARRIER
-      name: "<red>Close</red>"
-      lore: []
+      name: "<!italic><red>Close Menu</red>"
+      lore:
+        - "<!italic><dark_gray>Return to the game.</dark_gray>"
     next:
       slot: 53
       material: ARROW
-      name: "<yellow>Next Page</yellow>"
-      lore: ["<gray>Open page %next_page%.</gray>"]
+      name: "<!italic><yellow>Next Page →</yellow>"
+      lore:
+        - "<!italic><gray>Open page <white>%next_page%</white>.</gray>"
 
 requirement-display:
   MONEY:
-    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>Money:</gray> <gold>$%current%</gold><dark_gray>/</dark_gray><gold>$%required%</gold>"
-    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>Money:</gray> <gold>$%current%</gold><dark_gray>/</dark_gray><gold>$%required%</gold> <dark_gray>(-$%missing%)</dark_gray>"
+    completed: "<!italic><green>✔</green> <gray>Money</gray> <dark_gray>›</dark_gray> <gold>$%current%</gold> <dark_gray>/</dark_gray> <white>$%required%</white>"
+    incomplete: "<!italic><red>✖</red> <gray>Money</gray> <dark_gray>›</dark_gray> <gold>$%current%</gold> <dark_gray>/</dark_gray> <white>$%required%</white> <dark_gray>(missing $%missing%)</dark_gray>"
   XP_LEVELS:
-    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>XP Levels:</gray> <yellow>%current%</yellow><dark_gray>/</dark_gray><yellow>%required%</yellow>"
-    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>XP Levels:</gray> <yellow>%current%</yellow><dark_gray>/</dark_gray><yellow>%required%</yellow>"
+    completed: "<!italic><green>✔</green> <gray>XP Levels</gray> <dark_gray>›</dark_gray> <yellow>%current%</yellow> <dark_gray>/</dark_gray> <white>%required%</white>"
+    incomplete: "<!italic><red>✖</red> <gray>XP Levels</gray> <dark_gray>›</dark_gray> <yellow>%current%</yellow> <dark_gray>/</dark_gray> <white>%required%</white>"
   PLAYTIME:
-    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>Playtime:</gray> <aqua>%current_formatted%</aqua><dark_gray>/</dark_gray><aqua>%required_formatted%</aqua>"
-    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>Playtime:</gray> <aqua>%current_formatted%</aqua><dark_gray>/</dark_gray><aqua>%required_formatted%</aqua>"
+    completed: "<!italic><green>✔</green> <gray>Playtime</gray> <dark_gray>›</dark_gray> <aqua>%current_formatted%</aqua> <dark_gray>/</dark_gray> <white>%required_formatted%</white>"
+    incomplete: "<!italic><red>✖</red> <gray>Playtime</gray> <dark_gray>›</dark_gray> <aqua>%current_formatted%</aqua> <dark_gray>/</dark_gray> <white>%required_formatted%</white>"
   PERMISSION:
-    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>Special access</gray>"
-    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>Special access</gray>"
+    completed: "<!italic><green>✔</green> <gray>Special access</gray>"
+    incomplete: "<!italic><red>✖</red> <gray>Special access</gray>"
   PLACEHOLDER:
-    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>%placeholder%:</gray> <white>%current%</white>"
-    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>%placeholder%:</gray> <white>%current%</white><dark_gray>/</dark_gray><white>%required%</white>"
+    completed: "<!italic><green>✔</green> <gray>%placeholder%</gray> <dark_gray>›</dark_gray> <white>%current%</white>"
+    incomplete: "<!italic><red>✖</red> <gray>%placeholder%</gray> <dark_gray>›</dark_gray> <white>%current%</white> <dark_gray>/</dark_gray> <white>%required%</white>"
   ITEM:
-    completed: "<dark_gray>•</dark_gray> <green>✔</green> <gray>%material%:</gray> <white>%current%</white><dark_gray>/</dark_gray><white>%required%</white>"
-    incomplete: "<dark_gray>•</dark_gray> <red>✘</red> <gray>%material%:</gray> <white>%current%</white><dark_gray>/</dark_gray><white>%required%</white>"
+    completed: "<!italic><green>✔</green> <gray>%material%</gray> <dark_gray>›</dark_gray> <white>%current%</white> <dark_gray>/</dark_gray> <white>%required%</white>"
+    incomplete: "<!italic><red>✖</red> <gray>%material%</gray> <dark_gray>›</dark_gray> <white>%current%</white> <dark_gray>/</dark_gray> <white>%required%</white>"
 
 admin:
-  list-title: "<gradient:#FFE98A:#FFB84D><bold>Rank Editor</bold></gradient> <gray>• %page%/%pages%</gray>"
-  edit-title: "<gradient:#FFE98A:#FFB84D><bold>Edit %rank_short_name%</bold></gradient>"
-  lore-title: "<gradient:#FFE98A:#FFB84D><bold>Lore • %rank_short_name%</bold></gradient>"
-
+  list-title: "<gradient:#4158D0:#C850C0><bold>Rank Editor</bold></gradient> <dark_gray>•</dark_gray> <gray>%page%/%pages%</gray>"
+  edit-title: "<gradient:#4158D0:#C850C0><bold>Edit %rank_short_name%</bold></gradient>"
+  lore-title: "<gradient:#4158D0:#C850C0><bold>Lore</bold></gradient> <dark_gray>•</dark_gray> <gray>%rank_short_name%</gray>"

@@ -1,7 +1,9 @@
 package com.zpkdxgames.plexonranks.util;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -15,15 +17,22 @@ import java.util.regex.Pattern;
 public final class TextFormatter {
     private static final Pattern LEGACY = Pattern.compile("(?i)&(?:[0-9A-FK-OR]|x&)");
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private final MiniMessage strictMiniMessage = MiniMessage.builder().strict(true).build();
     private final LegacyComponentSerializer legacy = LegacyComponentSerializer.builder()
             .character('&')
             .hexColors()
             .useUnusualXRepeatedCharacterHexFormat()
             .build();
     private final PlainTextComponentSerializer plain = PlainTextComponentSerializer.plainText();
+    private final boolean miniMessageSupport;
     private final boolean legacySupport;
 
     public TextFormatter(boolean legacySupport) {
+        this(true, legacySupport);
+    }
+
+    public TextFormatter(boolean miniMessageSupport, boolean legacySupport) {
+        this.miniMessageSupport = miniMessageSupport;
         this.legacySupport = legacySupport;
     }
 
@@ -31,10 +40,11 @@ public final class TextFormatter {
         if (input == null || input.isEmpty()) {
             return Component.empty();
         }
-        if (legacySupport && LEGACY.matcher(input).find()) {
-            return legacy.deserialize(input);
+        Component parsed = miniMessageSupport ? miniMessage.deserialize(input) : Component.text(input);
+        if (legacySupport) {
+            parsed = deserializeLegacyText(parsed);
         }
-        return miniMessage.deserialize(input);
+        return parsed;
     }
 
     public Component component(String template, Map<String, String> placeholders) {
@@ -72,9 +82,25 @@ public final class TextFormatter {
         return plain.serialize(component);
     }
 
+    public String miniMessage(Component component) {
+        return miniMessage.serialize(component);
+    }
+
+    public String legacy(Component component) {
+        return legacy.serialize(component);
+    }
+
+    public Component withoutItalics(Component component) {
+        return component.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
+    }
+
     public boolean valid(String input) {
         try {
-            component(input);
+            if (miniMessageSupport && input != null && !input.isEmpty()) {
+                strictMiniMessage.deserialize(input);
+            } else if (legacySupport && input != null) {
+                legacy.deserialize(input);
+            }
             return true;
         } catch (RuntimeException exception) {
             return false;
@@ -89,5 +115,16 @@ public final class TextFormatter {
         }
         return rendered;
     }
-}
 
+    private Component deserializeLegacyText(Component component) {
+        List<Component> children = component.children().stream().map(this::deserializeLegacyText).toList();
+        Component withoutChildren = component.children(List.of());
+        if (withoutChildren instanceof TextComponent text && LEGACY.matcher(text.content()).find()) {
+            List<Component> combined = new ArrayList<>(children.size() + 1);
+            combined.add(legacy.deserialize(text.content()));
+            combined.addAll(children);
+            return Component.empty().style(text.style()).children(combined);
+        }
+        return withoutChildren.children(children);
+    }
+}

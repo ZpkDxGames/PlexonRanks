@@ -18,6 +18,7 @@ import com.zpkdxgames.plexonranks.listener.PlayerDataListener;
 import com.zpkdxgames.plexonranks.menu.AdminRankMenu;
 import com.zpkdxgames.plexonranks.menu.ChatInputManager;
 import com.zpkdxgames.plexonranks.menu.RankListMenu;
+import com.zpkdxgames.plexonranks.model.RequirementType;
 import com.zpkdxgames.plexonranks.requirement.RequirementEngine;
 import com.zpkdxgames.plexonranks.reward.RewardEngine;
 import com.zpkdxgames.plexonranks.service.BackupService;
@@ -55,6 +56,12 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             if (!luckPerms.connected()) throw new IllegalStateException("LuckPerms API service is unavailable.");
             PlaceholderHook placeholders = new PlaceholderHook(this,
                     configs.current().config().getBoolean("integrations.placeholderapi", true));
+            boolean placeholderRequirements = configs.current().registry().all().stream()
+                    .flatMap(rank -> rank.requirements().stream())
+                    .anyMatch(requirement -> requirement.type() == RequirementType.PLACEHOLDER);
+            if (placeholderRequirements && !placeholders.connected()) {
+                throw new IllegalStateException("PlaceholderAPI is required because PLACEHOLDER requirements are configured.");
+            }
             DiscordSrvHook discord = new DiscordSrvHook(this,
                     configs.current().config().getBoolean("integrations.discordsrv", false));
 
@@ -62,6 +69,7 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             RewardEngine rewards = new RewardEngine(this, vault, luckPerms, configs::formatter);
             MessageService messages = new MessageService(configs);
             RankService ranks = new RankService(this, configs, database, rewards);
+            configs.onReload(ranks::repairCachedRanks);
             RenderService render = new RenderService(configs, requirements);
             RankupService rankup = new RankupService(this, configs, database, ranks, requirements, rewards, render, messages, discord);
             BackupService backups = new BackupService(this, configs, database);
@@ -69,7 +77,7 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             rankListMenu = new RankListMenu(this, configs, ranks, rankup, render);
             ChatInputManager chatInput = new ChatInputManager(this, messages);
             RankConfigEditor configEditor = new RankConfigEditor(this, configs);
-            AdminRankMenu adminMenu = new AdminRankMenu(this, configs, configEditor, chatInput, messages);
+            AdminRankMenu adminMenu = new AdminRankMenu(this, configs, configEditor, chatInput, messages, render);
 
             RankCommand rankCommand = new RankCommand(configs, ranks, render, messages, rankListMenu);
             command("rank").setExecutor(rankCommand);
@@ -124,11 +132,11 @@ public final class PlexonRanksPlugin extends JavaPlugin {
         getLogger().info(" • LuckPerms: " + status(luckPerms.connected()));
         getLogger().info(" • PlaceholderAPI: " + status(placeholders.connected()));
         getLogger().info(" • DiscordSRV: " + (discord.connected() ? "CONNECTED" : "DISABLED"));
-        getLogger().info(" • MiniMessage: ENABLED");
+        getLogger().info(" • MiniMessage: " + (configs.current().config().getBoolean("formatting.minimessage", true)
+                ? "ENABLED" : "DISABLED"));
     }
 
     private static String status(boolean connected) {
         return connected ? "CONNECTED" : "UNAVAILABLE";
     }
 }
-

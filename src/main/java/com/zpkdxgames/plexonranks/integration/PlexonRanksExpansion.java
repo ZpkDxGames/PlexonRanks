@@ -61,9 +61,20 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
             case "rank_id" -> current.id();
             case "rank_order" -> String.valueOf(current.order());
             case "rank_name" -> current.display().name();
+            case "rank_short_name" -> current.display().shortName();
             case "rank_tag" -> current.display().tag();
+            case "rank_name_plain" -> formatted(current.display().name(), "PLAIN");
+            case "rank_tag_plain" -> formatted(current.display().tag(), "PLAIN");
+            case "rank_name_mm", "rank_name_minimessage" -> formatted(current.display().name(), "MINIMESSAGE");
+            case "rank_tag_mm", "rank_tag_minimessage" -> formatted(current.display().tag(), "MINIMESSAGE");
+            case "rank_name_legacy" -> formatted(current.display().name(), "LEGACY");
+            case "rank_tag_legacy" -> formatted(current.display().tag(), "LEGACY");
             case "next_id" -> next.map(Rank::id).orElse("");
             case "next_name" -> next.map(rank -> rank.display().name()).orElse("");
+            case "next_short_name" -> next.map(rank -> rank.display().shortName()).orElse("");
+            case "next_name_plain" -> next.map(rank -> formatted(rank.display().name(), "PLAIN")).orElse("");
+            case "next_name_mm", "next_name_minimessage" -> next.map(rank -> formatted(rank.display().name(), "MINIMESSAGE")).orElse("");
+            case "next_name_legacy" -> next.map(rank -> formatted(rank.display().name(), "LEGACY")).orElse("");
             case "is_max_rank" -> String.valueOf(next.isEmpty());
             case "progress_percent" -> next.map(rank -> NumberFormats.number(
                     RequirementEngine.overallProgress(render.progress(player, rank)) * 100.0)).orElse("100");
@@ -92,5 +103,13 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
             default -> null;
         };
     }
-}
 
+    private String formatted(String value, String format) {
+        var component = configs.formatter().component(value);
+        return switch (format) {
+            case "PLAIN" -> configs.formatter().plain(component);
+            case "LEGACY" -> configs.formatter().legacy(component);
+            default -> configs.formatter().miniMessage(component);
+        };
+    }
+}

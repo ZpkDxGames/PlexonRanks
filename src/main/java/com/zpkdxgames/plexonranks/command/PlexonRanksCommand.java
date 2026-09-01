@@ -82,9 +82,10 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
             return;
         }
         messages.send(sender, "admin.reload-success", Map.of("ranks", String.valueOf(configs.current().registry().ordered().size())));
-        if (result.restartRequired()) sender.sendMessage(configs.formatter().component("<yellow>Storage settings changed; restart the server to apply them.</yellow>"));
+        if (result.restartRequired()) messages.send(sender, "admin.storage-restart-required");
         result.issues().stream().filter(issue -> issue.severity() == ValidationIssue.Severity.WARNING)
-                .forEach(issue -> sender.sendMessage(configs.formatter().component("<yellow>⚠ " + issue.source() + ": " + issue.message() + "</yellow>")));
+                .forEach(issue -> sender.sendMessage(messages.component("admin.validation-warning",
+                        Map.of("source", issue.source(), "message", issue.message()))));
     }
 
     private void validation(CommandSender sender, ReloadResult result) {
@@ -99,9 +100,9 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
         long errors = result.issues().stream().filter(issue -> issue.severity() == ValidationIssue.Severity.ERROR).count();
         long warnings = result.issues().size() - errors;
         messages.send(sender, "admin.validate-header", Map.of("errors", String.valueOf(errors), "warnings", String.valueOf(warnings)));
-        result.issues().stream().limit(20).forEach(issue -> sender.sendMessage(configs.formatter().component(
-                (issue.severity() == ValidationIssue.Severity.ERROR ? "<red>• " : "<yellow>• ")
-                        + issue.source() + ": " + issue.message() + (issue.severity() == ValidationIssue.Severity.ERROR ? "</red>" : "</yellow>"))));
+        result.issues().stream().limit(20).forEach(issue -> sender.sendMessage(messages.component(
+                issue.severity() == ValidationIssue.Severity.ERROR ? "admin.validation-error" : "admin.validation-warning",
+                Map.of("source", issue.source(), "message", issue.message()))));
     }
 
     private void info(CommandSender sender, String[] args) {
@@ -113,15 +114,17 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
                 return;
             }
             Rank rank = configs.current().registry().byId(data.rankId()).orElse(configs.current().registry().defaultRank());
-            sender.sendMessage(configs.formatter().component("<gray>Player:</gray> <white>" + safeName(target) + "</white>"));
-            sender.sendMessage(configs.formatter().component("<gray>Rank:</gray> " + rank.display().name()));
-            sender.sendMessage(configs.formatter().component("<gray>ID/order:</gray> <white>" + rank.id() + " / " + rank.order() + "</white>"));
+            messages.sendLines(sender, "admin.info-lines", Map.of(
+                    "player", safeName(target),
+                    "rank_name", rank.display().name(),
+                    "rank_id", rank.id(),
+                    "rank_order", String.valueOf(rank.order())));
         }));
     }
 
     private void setRank(CommandSender sender, String[] args, RankChangeCause cause) {
         if (args.length < 3) {
-            sender.sendMessage(configs.formatter().component("<yellow>Usage: /plexonranks setrank <player> <rank> [--grant-persistent]</yellow>"));
+            messages.send(sender, "admin.setrank-usage");
             return;
         }
         OfflinePlayer target = target(sender, args, 1);
@@ -137,7 +140,7 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
 
     private void shift(CommandSender sender, String[] args, boolean promote) {
         if (args.length < 2) {
-            sender.sendMessage(configs.formatter().component("<yellow>Usage: /plexonranks " + (promote ? "promote" : "demote") + " <player> [amount]</yellow>"));
+            messages.send(sender, "admin.shift-usage", Map.of("direction", promote ? "promote" : "demote"));
             return;
         }
         OfflinePlayer target = target(sender, args, 1);
@@ -209,7 +212,7 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
 
     private OfflinePlayer target(CommandSender sender, String[] args, int index) {
         if (args.length <= index) {
-            sender.sendMessage(configs.formatter().component("<yellow>A player name is required.</yellow>"));
+            messages.send(sender, "admin.player-required");
             return null;
         }
         Player online = Bukkit.getPlayerExact(args[index]);
@@ -273,4 +276,3 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
     private record PendingReset(UUID playerId, long expiresAt) {
     }
 }
-

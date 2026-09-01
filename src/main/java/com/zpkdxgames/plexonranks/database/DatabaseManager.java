@@ -65,7 +65,7 @@ public final class DatabaseManager implements AutoCloseable {
         migrate();
         int interrupted;
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE pr_rank_transactions SET status='INTERRUPTED', completed_at=? WHERE status NOT IN ('COMPLETED','INTERRUPTED','FAILED')")) {
+                "UPDATE pr_rank_transactions SET status='INTERRUPTED', completed_at=? WHERE status IN ('PREPARED','RANK_SAVED')")) {
             statement.setLong(1, System.currentTimeMillis());
             interrupted = statement.executeUpdate();
         }

@@ -1,6 +1,8 @@
 package com.zpkdxgames.plexonranks.config;
 
 import com.zpkdxgames.plexonranks.model.Rank;
+import com.zpkdxgames.plexonranks.model.RequirementType;
+import com.zpkdxgames.plexonranks.model.RewardType;
 import com.zpkdxgames.plexonranks.model.ValidationIssue;
 import com.zpkdxgames.plexonranks.util.TextFormatter;
 import org.bukkit.Material;
@@ -14,11 +16,19 @@ import java.util.Locale;
 import java.util.Set;
 
 final class ConfigurationValidator {
-    List<ValidationIssue> validate(YamlConfiguration config, YamlConfiguration menus, YamlConfiguration messages,
-                                   List<Rank> ranks, TextFormatter formatter) {
+    List<ValidationIssue> validate(YamlConfiguration config, YamlConfiguration ranksYaml, YamlConfiguration menus,
+                                   YamlConfiguration messages, List<Rank> ranks, TextFormatter formatter) {
         List<ValidationIssue> issues = new ArrayList<>();
+        validateSchema("config.yml", config, issues);
+        validateSchema("ranks.yml", ranksYaml, issues);
+        validateSchema("menus.yml", menus, issues);
+        validateSchema("messages.yml", messages, issues);
         if (!"SQLITE".equalsIgnoreCase(config.getString("storage.type", "SQLITE"))) {
-            issues.add(error("config.yml:storage.type", "PlexonRanks 1.0 supports SQLITE storage."));
+            issues.add(error("config.yml:storage.type", "PlexonRanks currently supports SQLITE storage."));
+        }
+        if (!config.getBoolean("formatting.minimessage", true)
+                && !config.getBoolean("formatting.legacy-ampersand-support", true)) {
+            issues.add(warning("config.yml:formatting", "Both formatting engines are disabled; all tags and color codes will be shown as plain text."));
         }
         int size = menus.getInt("rank-list.size", 54);
         if (size < 9 || size > 54 || size % 9 != 0) {
@@ -36,23 +46,74 @@ final class ConfigurationValidator {
         if (slots.isEmpty()) {
             issues.add(error("menus.yml:rank-list.rank-slots", "At least one rank slot is required."));
         }
+        Set<Integer> navigationSlots = new HashSet<>();
+        for (String key : List.of("previous", "info", "close", "next")) {
+            int slot = menus.getInt("rank-list.navigation." + key + ".slot", -1);
+            if (slot < 0 || slot >= size) {
+                issues.add(error("menus.yml:rank-list.navigation." + key + ".slot", "Navigation slot is outside the inventory."));
+            } else if (!navigationSlots.add(slot)) {
+                issues.add(error("menus.yml:rank-list.navigation." + key + ".slot", "Navigation items cannot share slot " + slot + "."));
+            } else if (slots.contains(slot)) {
+                issues.add(error("menus.yml:rank-list.navigation." + key + ".slot", "Navigation slot " + slot + " overlaps a rank slot."));
+            }
+        }
         validateMaterials(menus, issues);
         validateFormatting(messages, "messages.yml", formatter, issues);
         validateFormatting(menus, "menus.yml", formatter, issues);
         for (Rank rank : ranks) {
+            if (rank.defaultRank() && !rank.enabled()) {
+                issues.add(error("ranks.yml:ranks." + rank.id(), "The default rank must be enabled."));
+            }
             if (!rank.menu().material().isBlank() && Material.matchMaterial(rank.menu().material()) == null) {
                 issues.add(error("ranks.yml:ranks." + rank.id() + ".menu.material", "Unknown material " + rank.menu().material() + "."));
             }
-            if (!formatter.valid(rank.display().name()) || !formatter.valid(rank.display().tag())) {
+            if (!formatter.valid(rank.display().name()) || !formatter.valid(rank.display().tag())
+                    || !formatter.valid(rank.menu().name())) {
                 issues.add(error("ranks.yml:ranks." + rank.id() + ".display", "Malformed formatting in rank name or tag."));
+            }
+            for (String line : rank.display().description()) {
+                if (!formatter.valid(line)) {
+                    issues.add(error("ranks.yml:ranks." + rank.id() + ".display.description", "Malformed formatting: " + line));
+                }
             }
             for (String line : rank.menu().lore()) {
                 if (!formatter.valid(line)) {
                     issues.add(error("ranks.yml:ranks." + rank.id() + ".menu.lore", "Malformed formatting: " + line));
                 }
             }
+            rank.requirements().stream().filter(requirement -> requirement.type() == RequirementType.ITEM).forEach(requirement -> {
+                String material = requirement.string("material", "");
+                Material matched = Material.matchMaterial(material);
+                if (matched == null || matched.isAir()) {
+                    issues.add(error("ranks.yml:ranks." + rank.id() + ".requirements", "Unknown item material " + material + "."));
+                }
+            });
+            rank.rewards().forEach(reward -> {
+                if (reward.type() == RewardType.ITEM) {
+                    String material = reward.string("material", "");
+                    Material matched = Material.matchMaterial(material);
+                    if (matched == null || matched.isAir()) {
+                        issues.add(error("ranks.yml:ranks." + rank.id() + ".rewards", "Unknown item reward material " + material + "."));
+                    }
+                }
+                for (String line : reward.display()) {
+                    if (!formatter.valid(line)) {
+                        issues.add(error("ranks.yml:ranks." + rank.id() + ".rewards.display", "Malformed formatting: " + line));
+                    }
+                }
+            });
         }
         return issues;
+    }
+
+    private void validateSchema(String source, YamlConfiguration yaml, List<ValidationIssue> issues) {
+        int version = yaml.getInt("schema-version", 1);
+        if (version > ConfigUpgradeService.CURRENT_SCHEMA) {
+            issues.add(error(source + ":schema-version", "Schema " + version + " is newer than this plugin supports."));
+        } else if (version < ConfigUpgradeService.CURRENT_SCHEMA) {
+            issues.add(warning(source + ":schema-version", "Schema " + version + " is older than schema "
+                    + ConfigUpgradeService.CURRENT_SCHEMA + ". Restart to run the safe upgrader."));
+        }
     }
 
     private void validateMaterials(YamlConfiguration menus, List<ValidationIssue> issues) {
@@ -90,5 +151,8 @@ final class ConfigurationValidator {
     private static ValidationIssue error(String source, String message) {
         return new ValidationIssue(ValidationIssue.Severity.ERROR, source, message);
     }
-}
 
+    private static ValidationIssue warning(String source, String message) {
+        return new ValidationIssue(ValidationIssue.Severity.WARNING, source, message);
+    }
+}

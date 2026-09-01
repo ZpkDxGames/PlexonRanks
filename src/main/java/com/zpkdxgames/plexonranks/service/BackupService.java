@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class BackupService {
-    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss").withZone(ZoneOffset.UTC);
+    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss_SSS").withZone(ZoneOffset.UTC);
     private final JavaPlugin plugin;
     private final ConfigManager configs;
     private final DatabaseManager database;

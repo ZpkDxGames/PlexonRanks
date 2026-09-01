@@ -36,10 +36,24 @@ class RankRegistryTest {
                 () -> new RankRegistry(List.of(rank("same", 0, true, ""), rank("same", 1, false, ""))));
     }
 
+    @Test
+    void directLookupNeverReturnsDisabledRanks() {
+        RankRegistry registry = new RankRegistry(List.of(
+                rank("start", 0, true, true, ""),
+                rank("disabled", 1, false, false, ""),
+                rank("finish", 2, false, true, "")));
+
+        assertTrue(registry.find("disabled").isEmpty());
+        assertEquals(List.of("start", "finish"), registry.ordered().stream().map(Rank::id).toList());
+    }
+
     private static Rank rank(String id, int order, boolean defaultRank, String bypass) {
-        return new Rank(id, order, true, true, defaultRank, bypass,
+        return rank(id, order, defaultRank, true, bypass);
+    }
+
+    private static Rank rank(String id, int order, boolean defaultRank, boolean enabled, String bypass) {
+        return new Rank(id, order, enabled, true, defaultRank, bypass,
                 new RankDisplay(id, id, id, List.of()), List.of(), List.of(), false,
                 new RankMenu(true, "", 1, 0, false, "%rank_name%", List.of()));
     }
 }
-

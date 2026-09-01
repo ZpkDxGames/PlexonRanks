@@ -51,7 +51,7 @@ public final class RankRegistry {
     }
 
     public Optional<Rank> find(String input) {
-        Optional<Rank> direct = byId(input);
+        Optional<Rank> direct = byId(input).filter(Rank::enabled);
         if (direct.isPresent()) {
             return direct;
         }
@@ -107,4 +107,3 @@ public final class RankRegistry {
         return new ArrayList<>(byId.keySet());
     }
 }
-

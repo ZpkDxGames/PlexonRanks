@@ -65,7 +65,7 @@ public final class RankCommand implements CommandExecutor, TabCompleter {
         }
         List<RequirementProgress> progress = render.progress(player, next.get());
         Map<String, String> placeholders = render.placeholders(player, current, next.get(), progress, RankState.NEXT);
-        List<String> lines = render.expand(messages.lines("rank.lines"), placeholders,
+        List<String> lines = render.expand(messages.lines("rank.lines"), next.get(), RankState.NEXT,
                 render.requirementLines(progress), render.rewardLines(next.get()));
         for (String line : lines) player.sendMessage(configs.formatter().component(line, placeholders));
     }
@@ -77,4 +77,3 @@ public final class RankCommand implements CommandExecutor, TabCompleter {
                 .filter(value -> value.startsWith(args[0].toLowerCase())).toList() : List.of();
     }
 }
-

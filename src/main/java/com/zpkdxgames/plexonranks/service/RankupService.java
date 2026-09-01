@@ -13,6 +13,7 @@ import com.zpkdxgames.plexonranks.model.RequirementProgress;
 import com.zpkdxgames.plexonranks.requirement.Consumption;
 import com.zpkdxgames.plexonranks.requirement.RequirementEngine;
 import com.zpkdxgames.plexonranks.reward.RewardEngine;
+import com.zpkdxgames.plexonranks.util.NumberFormats;
 import com.zpkdxgames.plexonranks.util.TextFormatter;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
@@ -67,8 +68,9 @@ public final class RankupService {
         }
         long now = System.currentTimeMillis();
         long cooldown = Math.max(0, configs.current().config().getLong("rankup.cooldown-ms", 750));
-        if (now - lastAttempt.getOrDefault(uuid, 0L) < cooldown) {
-            messages.send(player, "rankup.cooldown");
+        long remaining = cooldown - (now - lastAttempt.getOrDefault(uuid, 0L));
+        if (remaining > 0) {
+            messages.send(player, "rankup.cooldown", Map.of("seconds", NumberFormats.number(remaining / 1000.0)));
             return;
         }
         if (!processing.add(uuid)) {
@@ -87,7 +89,8 @@ public final class RankupService {
         Rank target = next.get();
         List<RequirementProgress> progress = requirements.evaluate(player, target.requirements());
         if (progress.stream().anyMatch(value -> !value.complete())) {
-            messages.send(player, "rankup.requirements-not-met");
+            messages.send(player, "rankup.requirements-not-met",
+                    render.placeholders(player, current, target, progress, RankState.NEXT));
             playConfiguredSound(player, "sounds.denied");
             processing.remove(uuid);
             return;
@@ -106,7 +109,9 @@ public final class RankupService {
             consumed = requirements.consume(player, target.requirements());
         } catch (RuntimeException exception) {
             plugin.getLogger().warning("Rank-up consumption failed for " + player.getName() + ": " + exception.getMessage());
-            messages.send(player, "rankup.requirements-not-met");
+            List<RequirementProgress> refreshed = requirements.evaluate(player, target.requirements());
+            messages.send(player, "rankup.requirements-not-met",
+                    render.placeholders(player, current, target, refreshed, RankState.NEXT));
             processing.remove(uuid);
             return;
         }
@@ -154,17 +159,17 @@ public final class RankupService {
     }
 
     private void feedback(Player player, Rank rank, Map<String, String> placeholders) {
-        if (configs.current().config().getBoolean("feedback.chat", true)) {
+        if (player.isOnline() && configs.current().config().getBoolean("feedback.chat", true)) {
             messages.send(player, "rankup.success", placeholders);
         }
-        if (configs.current().config().getBoolean("feedback.title", true)) {
+        if (player.isOnline() && configs.current().config().getBoolean("feedback.title", true)) {
             player.showTitle(Title.title(
                     messages.component("rankup.title", placeholders),
                     messages.component("rankup.subtitle", placeholders),
                     Title.Times.times(Duration.ofMillis(350), Duration.ofSeconds(3), Duration.ofMillis(600))
             ));
         }
-        if (configs.current().config().getBoolean("feedback.sound", true)) {
+        if (player.isOnline() && configs.current().config().getBoolean("feedback.sound", true)) {
             playConfiguredSound(player, "sounds.rankup");
         }
         if (rank.announce()
@@ -199,4 +204,3 @@ public final class RankupService {
         return root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage();
     }
 }
-

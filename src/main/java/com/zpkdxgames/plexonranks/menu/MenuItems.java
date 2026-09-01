@@ -21,8 +21,8 @@ final class MenuItems {
         }
         ItemStack item = new ItemStack(material, Math.max(1, Math.min(material.getMaxStackSize(), amount)));
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(formatter.component(name == null ? " " : name, placeholders));
-        meta.lore(formatter.components(lore, placeholders));
+        meta.displayName(formatter.withoutItalics(formatter.component(name == null ? " " : name, placeholders)));
+        meta.lore(formatter.components(lore, placeholders).stream().map(formatter::withoutItalics).toList());
         meta.setEnchantmentGlintOverride(glow);
         if (customModelData > 0) {
             meta.setCustomModelData(customModelData);
@@ -32,4 +32,3 @@ final class MenuItems {
         return item;
     }
 }
-

@@ -1,17 +1,16 @@
-# PlexonRanks 2.0 — core settings
-schema-version: 2
+schema-version: 1
 
 plugin:
+  language: en
   debug: false
 
-# MiniMessage is the primary renderer. Legacy ampersand colors remain available for
-# older rank files and may safely be used inside a MiniMessage-formatted template.
 formatting:
   minimessage: true
   legacy-ampersand-support: true
 
 rankup:
   cooldown-ms: 750
+  prevent-concurrent: true
   right-click-next-rank: true
 
 permissions:
@@ -24,6 +23,8 @@ storage:
     file: database.db
 
 integrations:
+  vault: true
+  luckperms: true
   placeholderapi: true
   discordsrv: false
 
@@ -48,12 +49,11 @@ sounds:
 
 discord:
   game-channel: global
-  message: "**%player%** advanced to **%rank_short_name%**!"
+  message: "**%player%** ranked up to **%rank_short_name%**!"
 
 backup:
+  enabled: true
   keep: 10
 
-# FIRST safely moves players to the first rank when their saved rank was deleted
-# or disabled. FAIL keeps the row untouched and reports the configuration problem.
 join:
   missing-rank-fallback: FIRST

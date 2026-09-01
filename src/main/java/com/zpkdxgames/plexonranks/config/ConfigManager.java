@@ -9,11 +9,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class ConfigManager {
     private final JavaPlugin plugin;
     private final RankParser rankParser = new RankParser();
     private final ConfigurationValidator validator = new ConfigurationValidator();
+    private final List<Runnable> reloadListeners = new CopyOnWriteArrayList<>();
     private volatile ConfigSnapshot current;
     private volatile TextFormatter formatter;
 
@@ -21,12 +23,17 @@ public final class ConfigManager {
         this.plugin = plugin;
     }
 
-    public void ensureDefaults() {
+    public void ensureDefaults() throws Exception {
         plugin.getDataFolder().mkdirs();
         saveIfMissing("config.yml");
         saveIfMissing("ranks.yml");
         saveIfMissing("menus.yml");
         saveIfMissing("messages.yml");
+        ConfigUpgradeService.UpgradeResult upgrade = new ConfigUpgradeService(plugin).upgradeIfNeeded();
+        if (upgrade.upgraded()) {
+            plugin.getLogger().info("Upgraded PlexonRanks configuration to schema 2. Previous files: "
+                    + upgrade.backupDirectory().getFileName());
+        }
     }
 
     public ConfigSnapshot loadInitial() {
@@ -48,6 +55,13 @@ public final class ConfigManager {
         boolean restartRequired = !oldStorage.isBlank() && !oldStorage.equals(attempt.snapshot.storageFingerprint());
         this.current = attempt.snapshot;
         this.formatter = attempt.formatter;
+        reloadListeners.forEach(listener -> {
+            try {
+                listener.run();
+            } catch (RuntimeException exception) {
+                plugin.getLogger().warning("Post-reload listener failed: " + exception.getMessage());
+            }
+        });
         return new ReloadResult(true, restartRequired, attempt.issues);
     }
 
@@ -76,6 +90,10 @@ public final class ConfigManager {
         return new File(plugin.getDataFolder(), name);
     }
 
+    public void onReload(Runnable listener) {
+        reloadListeners.add(listener);
+    }
+
     private LoadAttempt parse() {
         List<ValidationIssue> issues = new ArrayList<>();
         try {
@@ -83,10 +101,12 @@ public final class ConfigManager {
             YamlConfiguration ranksYaml = YamlConfiguration.loadConfiguration(file("ranks.yml"));
             YamlConfiguration menus = YamlConfiguration.loadConfiguration(file("menus.yml"));
             YamlConfiguration messages = YamlConfiguration.loadConfiguration(file("messages.yml"));
-            TextFormatter candidateFormatter = new TextFormatter(config.getBoolean("formatting.legacy-ampersand-support", true));
+            TextFormatter candidateFormatter = new TextFormatter(
+                    config.getBoolean("formatting.minimessage", true),
+                    config.getBoolean("formatting.legacy-ampersand-support", true));
             RankParser.ParseResult parsed = rankParser.parse(ranksYaml);
             issues.addAll(parsed.issues());
-            issues.addAll(validator.validate(config, menus, messages, parsed.ranks(), candidateFormatter));
+            issues.addAll(validator.validate(config, ranksYaml, menus, messages, parsed.ranks(), candidateFormatter));
             if (parsed.ranks().isEmpty() || hasErrors(issues)) {
                 return new LoadAttempt(null, candidateFormatter, issues);
             }

@@ -9,8 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 final class RankListHolder implements InventoryHolder {
-    private final int page;
-    private final int pages;
+    private int page;
+    private int pages;
     private final Map<Integer, String> ranksBySlot = new HashMap<>();
     private final Map<Integer, RankState> statesBySlot = new HashMap<>();
     private Inventory inventory;
@@ -32,6 +32,11 @@ final class RankListHolder implements InventoryHolder {
     void clearRanks() {
         ranksBySlot.clear();
         statesBySlot.clear();
+    }
+
+    void pagination(int page, int pages) {
+        this.page = page;
+        this.pages = pages;
     }
 
     String rankAt(int slot) {

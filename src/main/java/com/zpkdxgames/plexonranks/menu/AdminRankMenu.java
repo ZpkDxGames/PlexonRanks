@@ -3,7 +3,9 @@ package com.zpkdxgames.plexonranks.menu;
 import com.zpkdxgames.plexonranks.config.ConfigManager;
 import com.zpkdxgames.plexonranks.config.RankConfigEditor;
 import com.zpkdxgames.plexonranks.model.Rank;
+import com.zpkdxgames.plexonranks.model.RankState;
 import com.zpkdxgames.plexonranks.service.MessageService;
+import com.zpkdxgames.plexonranks.service.RenderService;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -29,14 +31,16 @@ public final class AdminRankMenu implements Listener {
     private final RankConfigEditor editor;
     private final ChatInputManager input;
     private final MessageService messages;
+    private final RenderService render;
 
     public AdminRankMenu(JavaPlugin plugin, ConfigManager configs, RankConfigEditor editor,
-                         ChatInputManager input, MessageService messages) {
+                         ChatInputManager input, MessageService messages, RenderService render) {
         this.plugin = plugin;
         this.configs = configs;
         this.editor = editor;
         this.input = input;
         this.messages = messages;
+        this.render = render;
     }
 
     public void openList(Player player, int requestedPage) {
@@ -96,12 +100,12 @@ public final class AdminRankMenu implements Listener {
         inventory.setItem(22, button("COMPARATOR", "<yellow>Order: " + rank.order() + "</yellow>",
                 List.of("<gray>Left-click:</gray> <white>Move earlier</white>", "<gray>Right-click:</gray> <white>Move later</white>")));
         inventory.setItem(23, button("BOOK", "<yellow>Menu Lore</yellow>", List.of("<gray>Edit, add, remove, and reorder lines.</gray>")));
+        var previewProgress = render.progress(player, rank);
+        Map<String, String> previewValues = render.placeholders(player, rank, rank, previewProgress, RankState.NEXT);
+        List<String> previewLore = render.expand(effectiveLore(rank), rank, RankState.NEXT,
+                render.requirementLines(previewProgress), render.rewardLines(rank));
         inventory.setItem(31, MenuItems.create(configs.formatter(), rank.menu().material().isBlank() ? "NETHER_STAR" : rank.menu().material(), 1,
-                rank.display().name(), effectiveLore(rank), rank.menu().glow(), rank.menu().customModelData(), Map.of(
-                        "rank_name", rank.display().name(), "rank_short_name", rank.display().shortName(), "rank_id", rank.id(),
-                        "rank_order", String.valueOf(rank.order()), "status", "<aqua><bold>PREVIEW</bold></aqua>",
-                        "requirements", "<gray>Rendered in the player menu</gray>", "rewards", "<gray>Rendered in the player menu</gray>",
-                        "money", "0", "xp", "0", "playtime", "0")));
+                rank.display().name(), previewLore, rank.menu().glow(), rank.menu().customModelData(), previewValues));
         inventory.setItem(45, button("ARROW", "<yellow>Back</yellow>", List.of()));
         inventory.setItem(49, button("CHEST", "<green>Saved Live</green>", List.of("<gray>Every accepted edit is validated and reloaded atomically.</gray>")));
         inventory.setItem(53, button("BARRIER", "<red>Delete Rank</red>", List.of("<red>Requires confirmation.</red>")));
@@ -293,4 +297,3 @@ public final class AdminRankMenu implements Listener {
         for (int slot = 0; slot < inventory.getSize(); slot++) inventory.setItem(slot, filler);
     }
 }
-

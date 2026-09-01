@@ -113,12 +113,14 @@ final class RankParser {
                 continue;
             }
             double amount = number(map.get("amount"), type == RequirementType.PERMISSION || type == RequirementType.PLACEHOLDER ? 1 : 0);
-            if (amount < 0) {
-                issues.add(error(path + ".requirements[" + index + "]", "Requirement amount cannot be negative."));
+            if (requiresAmount(type) && numberOrNull(map.get("amount")) == null) {
+                issues.add(error(path + ".requirements[" + index + "]", "Requirement amount is missing or is not a finite number."));
+            } else if (!Double.isFinite(amount) || amount < 0) {
+                issues.add(error(path + ".requirements[" + index + "]", "Requirement amount must be a finite, non-negative number."));
             }
             boolean consume = booleanValue(map.get("consume"), false);
-            if (type == RequirementType.PLAYTIME && consume) {
-                issues.add(warning(path + ".requirements[" + index + "]", "Playtime is never consumed; consume was ignored."));
+            if (List.of(RequirementType.PLAYTIME, RequirementType.PERMISSION, RequirementType.PLACEHOLDER).contains(type) && consume) {
+                issues.add(warning(path + ".requirements[" + index + "]", type + " is never consumed; consume was ignored."));
                 consume = false;
             }
             if (type == RequirementType.PERMISSION && string(map.get("permission")).isBlank()) {
@@ -126,6 +128,19 @@ final class RankParser {
             }
             if (type == RequirementType.ITEM && string(map.get("material")).isBlank()) {
                 issues.add(error(path + ".requirements[" + index + "]", "Item requirement is missing material."));
+            }
+            if (type == RequirementType.PLAYTIME && !List.of("SECONDS", "MINUTES", "HOURS", "DAYS")
+                    .contains(string(map.getOrDefault("unit", "MINUTES")).toUpperCase(Locale.ROOT))) {
+                issues.add(error(path + ".requirements[" + index + "]", "Playtime unit must be SECONDS, MINUTES, HOURS, or DAYS."));
+            }
+            if (type == RequirementType.PLACEHOLDER) {
+                if (string(map.get("placeholder")).isBlank()) {
+                    issues.add(error(path + ".requirements[" + index + "]", "Placeholder requirement is missing placeholder."));
+                }
+                String operator = string(map.getOrDefault("operator", ">=")).toUpperCase(Locale.ROOT);
+                if (!List.of("=", "!=", ">", ">=", "<", "<=", "CONTAINS").contains(operator)) {
+                    issues.add(error(path + ".requirements[" + index + "]", "Unsupported placeholder operator: " + operator));
+                }
             }
             result.add(new RequirementDefinition(type, amount, consume, map));
         }
@@ -153,6 +168,24 @@ final class RankParser {
             }
             if (type == RewardType.PERMISSION && permissions.isEmpty()) {
                 issues.add(error(path + ".rewards[" + index + "]", "Permission reward has no permissions."));
+            }
+            if (type == RewardType.LUCKPERMS_GROUP && string(map.get("group")).isBlank()) {
+                issues.add(error(path + ".rewards[" + index + "]", "LuckPerms group reward has no group."));
+            }
+            if (type == RewardType.ITEM && string(map.get("material")).isBlank()) {
+                issues.add(error(path + ".rewards[" + index + "]", "Item reward is missing material."));
+            }
+            if (List.of(RewardType.MONEY, RewardType.XP_LEVELS, RewardType.ITEM).contains(type)) {
+                Double amount = numberOrNull(map.get("amount"));
+                if (amount == null || amount <= 0) {
+                    issues.add(error(path + ".rewards[" + index + "]", "Reward amount must be a finite number greater than zero."));
+                }
+            }
+            if (commands.stream().anyMatch(command -> command.isBlank() || command.contains("\n") || command.contains("\r"))) {
+                issues.add(error(path + ".rewards[" + index + "]", "Command rewards cannot contain blank or multiline commands."));
+            }
+            if (permissions.stream().anyMatch(String::isBlank)) {
+                issues.add(error(path + ".rewards[" + index + "]", "Permission rewards cannot contain blank permissions."));
             }
             result.add(new RewardDefinition(
                     type,
@@ -185,14 +218,22 @@ final class RankParser {
     }
 
     private static double number(Object value, double fallback) {
-        if (value instanceof Number number) {
-            return number.doubleValue();
-        }
+        Double parsed = numberOrNull(value);
+        return parsed == null ? fallback : parsed;
+    }
+
+    private static Double numberOrNull(Object value) {
         try {
-            return value == null ? fallback : Double.parseDouble(String.valueOf(value));
-        } catch (NumberFormatException ignored) {
-            return fallback;
+            double parsed = value instanceof Number number ? number.doubleValue() : Double.parseDouble(String.valueOf(value));
+            return Double.isFinite(parsed) ? parsed : null;
+        } catch (NumberFormatException | NullPointerException ignored) {
+            return null;
         }
+    }
+
+    private static boolean requiresAmount(RequirementType type) {
+        return type == RequirementType.MONEY || type == RequirementType.XP_LEVELS
+                || type == RequirementType.PLAYTIME || type == RequirementType.ITEM;
     }
 
     private static boolean booleanValue(Object value, boolean fallback) {
@@ -210,4 +251,3 @@ final class RankParser {
     record ParseResult(List<Rank> ranks, List<ValidationIssue> issues) {
     }
 }
-

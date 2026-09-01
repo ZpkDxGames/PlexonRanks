@@ -10,6 +10,7 @@ import com.zpkdxgames.plexonranks.requirement.RequirementEngine;
 import com.zpkdxgames.plexonranks.reward.RewardEngine;
 import com.zpkdxgames.plexonranks.util.NumberFormats;
 import com.zpkdxgames.plexonranks.util.ListPlaceholderExpander;
+import com.zpkdxgames.plexonranks.util.TextFormatter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -38,20 +39,28 @@ public final class RenderService {
                     + (progress.complete() ? "completed" : "incomplete");
             String template = configs.current().menus().getString(base,
                     "<dark_gray>•</dark_gray> %completed% <gray>" + progress.definition().type() + ":</gray> %current%/%required%");
-            lines.add(com.zpkdxgames.plexonranks.util.TextFormatter.replaceRaw(template, progress.placeholders()));
+            lines.add(TextFormatter.replaceRaw(template, progress.placeholders()));
         }
-        return lines.isEmpty() ? List.of("<dark_gray>• No requirements</dark_gray>") : lines;
+        return lines.isEmpty()
+                ? configs.current().menus().getStringList("rank-list.empty.requirements")
+                : List.copyOf(lines);
     }
 
     public List<String> rewardLines(Rank rank) {
         List<String> lines = RewardEngine.display(rank);
-        return lines.isEmpty() ? List.of("<dark_gray>• No rewards</dark_gray>") : lines;
+        return lines.isEmpty()
+                ? configs.current().menus().getStringList("rank-list.empty.rewards")
+                : lines;
     }
 
-    public List<String> expand(List<String> template, Map<String, String> placeholders,
+    public List<String> expand(List<String> template, Rank rank, RankState state,
                                List<String> requirementLines, List<String> rewardLines) {
-        return ListPlaceholderExpander.expand(template, placeholders,
-                Map.of("%requirements%", requirementLines, "%rewards%", rewardLines));
+        Map<String, List<String>> lists = new LinkedHashMap<>();
+        lists.put("%description%", rank.display().description());
+        lists.put("%requirements%", requirementLines);
+        lists.put("%rewards%", rewardLines);
+        lists.put("%state_details%", stateDetails(state));
+        return ListPlaceholderExpander.expand(template, lists);
     }
 
     public Map<String, String> placeholders(Player player, Rank current, Rank target,
@@ -69,9 +78,16 @@ public final class RenderService {
         values.put("rank_short_name", target.display().shortName());
         values.put("rank_tag", target.display().tag());
         values.put("status", status(state));
+        values.put("status_icon", statusIcon(state));
         values.put("next_rank", target.display().name());
         values.put("next_rank_id", target.id());
-        values.put("progress_percent", NumberFormats.number(RequirementEngine.overallProgress(progress) * 100.0));
+        double normalized = RequirementEngine.overallProgress(progress);
+        values.put("progress_percent", NumberFormats.number(normalized * 100.0));
+        values.put("progress_bar", progressBar(normalized));
+        long complete = progress.stream().filter(RequirementProgress::complete).count();
+        values.put("requirements_complete", String.valueOf(complete));
+        values.put("requirements_total", String.valueOf(progress.size()));
+        values.put("requirements_remaining", String.valueOf(progress.size() - complete));
         values.put("commands_count", String.valueOf(target.rewards().stream().mapToInt(reward -> reward.commands().size()).sum()));
         values.put("permissions_count", String.valueOf(target.rewards().stream().mapToInt(reward -> reward.permissions().size()).sum()));
         setRequirementSummary(values, target);
@@ -89,6 +105,10 @@ public final class RenderService {
             values.put("next_rank", "<gray>None</gray>");
             values.put("next_rank_id", "");
             values.put("progress_percent", "100");
+            values.put("progress_bar", progressBar(1.0));
+            values.put("requirements_complete", "0");
+            values.put("requirements_total", "0");
+            values.put("requirements_remaining", "0");
             return values;
         }
         List<RequirementProgress> progress = progress(player, next.get());
@@ -97,6 +117,25 @@ public final class RenderService {
 
     public String status(RankState state) {
         return configs.current().menus().getString("rank-list.states." + state.name().toLowerCase() + ".status", state.name());
+    }
+
+    public String statusIcon(RankState state) {
+        return configs.current().menus().getString("rank-list.states." + state.name().toLowerCase() + ".icon", "");
+    }
+
+    public List<String> stateDetails(RankState state) {
+        return configs.current().menus().getStringList("rank-list.states." + state.name().toLowerCase() + ".lore");
+    }
+
+    public String progressBar(double normalized) {
+        int width = Math.max(5, Math.min(50, configs.current().messages().getInt("rank.progress-bar.width", 18)));
+        int filled = Math.max(0, Math.min(width, (int) Math.round(normalized * width)));
+        String character = configs.current().messages().getString("rank.progress-bar.character", "■");
+        String filledTemplate = configs.current().messages().getString("rank.progress-bar.filled", "<green>%bar%</green>");
+        String emptyTemplate = configs.current().messages().getString("rank.progress-bar.empty", "<dark_gray>%bar%</dark_gray>");
+        String complete = TextFormatter.replaceRaw(filledTemplate, Map.of("bar", character.repeat(filled)));
+        String remaining = TextFormatter.replaceRaw(emptyTemplate, Map.of("bar", character.repeat(width - filled)));
+        return complete + remaining;
     }
 
     private void setRequirementSummary(Map<String, String> values, Rank rank) {

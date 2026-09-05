@@ -37,17 +37,30 @@ public final class RankService {
         if (cached != null) {
             return CompletableFuture.completedFuture(cached);
         }
-        return loading.computeIfAbsent(uuid, ignored -> database
-                .loadOrCreate(uuid, configs.current().registry().defaultRank().id())
+
+        CompletableFuture<PlayerRankData> promise = new CompletableFuture<>();
+        CompletableFuture<PlayerRankData> existing = loading.putIfAbsent(uuid, promise);
+        if (existing != null) {
+            return existing;
+        }
+
+        database.loadOrCreate(uuid, configs.current().registry().defaultRank().id())
                 .thenCompose(this::repairMissingRank)
                 .whenComplete((data, error) -> {
-                    loading.remove(uuid);
-                    if (error == null) {
-                        cache.put(uuid, data);
-                    } else {
-                        plugin.getLogger().severe("Could not load rank data for " + uuid + ": " + error.getMessage());
+                    try {
+                        if (error == null) {
+                            cache.put(uuid, data);
+                            promise.complete(data);
+                        } else {
+                            plugin.getLogger().severe("Could not load rank data for " + uuid + ": " + error.getMessage());
+                            promise.completeExceptionally(error);
+                        }
+                    } finally {
+                        loading.remove(uuid, promise);
                     }
-                }));
+                });
+
+        return promise;
     }
 
     public boolean loaded(UUID uuid) {

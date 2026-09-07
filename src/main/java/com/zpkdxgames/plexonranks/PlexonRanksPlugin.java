@@ -65,11 +65,16 @@ public final class PlexonRanksPlugin extends JavaPlugin {
 
             vault = new VaultHook(this);
             luckPerms = new LuckPermsHook(this);
+            auditCoreProviderHint("VAULT", vault.connected());
+            auditCoreProviderHint("LUCKPERMS", luckPerms.connected());
             if (!vault.connected()) throw new IllegalStateException("Vault is loaded, but no economy provider is registered.");
             if (!luckPerms.connected()) throw new IllegalStateException("LuckPerms API service is unavailable.");
 
             boolean placeholderEnabled = configs.current().config().getBoolean("integrations.placeholderapi", true);
             placeholders = new PlaceholderHook(this, placeholderEnabled);
+            if (placeholderEnabled) {
+                auditCoreProviderHint("PLACEHOLDERAPI", placeholders.connected());
+            }
             boolean placeholderRequirements = configs.current().registry().all().stream()
                     .flatMap(rank -> rank.requirements().stream())
                     .anyMatch(requirement -> requirement.type() == RequirementType.PLACEHOLDER);
@@ -168,6 +173,19 @@ public final class PlexonRanksPlugin extends JavaPlugin {
 
     private PluginCommand command(String name) {
         return Objects.requireNonNull(getCommand(name), "Command missing from plugin.yml: " + name);
+    }
+
+    private void auditCoreProviderHint(String integrationId, boolean directlyAvailable) {
+        if (core == null || !core.available()) return;
+        CoreBridge.ProviderHint hint = core.providerHint(integrationId);
+        boolean contradictsDirectState = (hint == CoreBridge.ProviderHint.PRESENT && !directlyAvailable)
+                || (hint == CoreBridge.ProviderHint.MISSING && directlyAvailable);
+        if (contradictsDirectState) {
+            getLogger().warning("PlexonCore provider hint for " + integrationId + " is " + hint
+                    + " while direct PlexonRanks API validation reports "
+                    + (directlyAvailable ? "available" : "unavailable")
+                    + "; direct provider validation remains authoritative.");
+        }
     }
 
     private void publishCoreHealth() {

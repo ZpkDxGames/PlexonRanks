@@ -42,6 +42,23 @@ class DatabaseManagerTest {
     }
 
     @Test
+    void onlyOneCompetingRankTransactionCanCommit() throws Exception {
+        UUID player = UUID.randomUUID();
+        Path databaseFile = temp.resolve("concurrent.db");
+        DatabaseManager database = new DatabaseManager(Logger.getAnonymousLogger(), databaseFile);
+        database.initialize();
+        database.loadOrCreate(player, "unranked").get(5, TimeUnit.SECONDS);
+
+        var first = database.commitRankup(player, "unranked", "newbie-1", UUID.randomUUID().toString());
+        var second = database.commitRankup(player, "unranked", "newbie-2", UUID.randomUUID().toString());
+
+        assertTrue(first.get(5, TimeUnit.SECONDS));
+        assertFalse(second.get(5, TimeUnit.SECONDS));
+        assertEquals("newbie-1", database.loadOrCreate(player, "unranked").get(5, TimeUnit.SECONDS).rankId());
+        database.close();
+    }
+
+    @Test
     void startupDoesNotRewriteRewardFailuresAsInterrupted() throws Exception {
         UUID player = UUID.randomUUID();
         String transactionId = UUID.randomUUID().toString();

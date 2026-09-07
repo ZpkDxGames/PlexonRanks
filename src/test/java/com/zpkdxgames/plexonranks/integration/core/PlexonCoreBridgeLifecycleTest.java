@@ -8,13 +8,13 @@ import com.zpkdxgames.plexoncore.module.ModuleRegistry;
 import com.zpkdxgames.plexoncore.module.ModuleRegistry.ModuleDescriptor;
 import com.zpkdxgames.plexoncore.module.ModuleRegistry.ModuleState;
 import com.zpkdxgames.plexoncore.module.ModuleRegistry.ModuleVersionRange;
+import io.papermc.paper.plugin.configuration.PluginMeta;
 import java.lang.reflect.Proxy;
 import java.time.Instant;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.PluginMeta;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

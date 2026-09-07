@@ -14,6 +14,8 @@ import com.zpkdxgames.plexonranks.integration.LuckPermsHook;
 import com.zpkdxgames.plexonranks.integration.PlaceholderHook;
 import com.zpkdxgames.plexonranks.integration.PlexonRanksExpansion;
 import com.zpkdxgames.plexonranks.integration.VaultHook;
+import com.zpkdxgames.plexonranks.integration.core.CoreBridge;
+import com.zpkdxgames.plexonranks.integration.core.CoreBridgeFactory;
 import com.zpkdxgames.plexonranks.listener.PlayerDataListener;
 import com.zpkdxgames.plexonranks.menu.AdminRankMenu;
 import com.zpkdxgames.plexonranks.menu.ChatInputManager;
@@ -26,23 +28,34 @@ import com.zpkdxgames.plexonranks.service.MessageService;
 import com.zpkdxgames.plexonranks.service.RankService;
 import com.zpkdxgames.plexonranks.service.RankupService;
 import com.zpkdxgames.plexonranks.service.RenderService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Objects;
-
 public final class PlexonRanksPlugin extends JavaPlugin {
     private ConfigManager configs;
     private DatabaseManager database;
+    private RankService ranks;
     private RankListMenu rankListMenu;
     private PlexonRanksExpansion expansion;
     private PlexonRanksAPI api;
+    private VaultHook vault;
+    private LuckPermsHook luckPerms;
+    private PlaceholderHook placeholders;
+    private DiscordSrvHook discord;
+    private CoreBridge core;
 
     @Override
     public void onEnable() {
         try {
+            core = CoreBridgeFactory.resolve(this);
+            core.registerStarting();
+
             configs = new ConfigManager(this);
             configs.ensureDefaults();
             configs.loadInitial();
@@ -50,26 +63,31 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             database = new DatabaseManager(this, configs.current().config().getString("storage.sqlite.file", "database.db"));
             database.initialize();
 
-            VaultHook vault = new VaultHook(this);
-            LuckPermsHook luckPerms = new LuckPermsHook(this);
+            vault = new VaultHook(this);
+            luckPerms = new LuckPermsHook(this);
             if (!vault.connected()) throw new IllegalStateException("Vault is loaded, but no economy provider is registered.");
             if (!luckPerms.connected()) throw new IllegalStateException("LuckPerms API service is unavailable.");
-            PlaceholderHook placeholders = new PlaceholderHook(this,
-                    configs.current().config().getBoolean("integrations.placeholderapi", true));
+
+            boolean placeholderEnabled = configs.current().config().getBoolean("integrations.placeholderapi", true);
+            placeholders = new PlaceholderHook(this, placeholderEnabled);
             boolean placeholderRequirements = configs.current().registry().all().stream()
                     .flatMap(rank -> rank.requirements().stream())
                     .anyMatch(requirement -> requirement.type() == RequirementType.PLACEHOLDER);
             if (placeholderRequirements && !placeholders.connected()) {
                 throw new IllegalStateException("PlaceholderAPI is required because PLACEHOLDER requirements are configured.");
             }
-            DiscordSrvHook discord = new DiscordSrvHook(this,
-                    configs.current().config().getBoolean("integrations.discordsrv", false));
+
+            boolean discordEnabled = configs.current().config().getBoolean("integrations.discordsrv", false);
+            discord = new DiscordSrvHook(this, discordEnabled);
 
             RequirementEngine requirements = new RequirementEngine(vault, placeholders);
             RewardEngine rewards = new RewardEngine(this, vault, luckPerms, configs::formatter);
             MessageService messages = new MessageService(configs);
-            RankService ranks = new RankService(this, configs, database, rewards);
-            configs.onReload(ranks::repairCachedRanks);
+            ranks = new RankService(this, configs, database, rewards);
+            configs.onReload(() -> {
+                ranks.repairCachedRanks();
+                publishCoreHealth();
+            });
             RenderService render = new RenderService(configs, requirements);
             RankupService rankup = new RankupService(this, configs, database, ranks, requirements, rewards, render, messages, discord);
             BackupService backups = new BackupService(this, configs, database);
@@ -84,7 +102,9 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             command("rank").setTabCompleter(rankCommand);
             command("ranks").setExecutor(new RanksCommand(rankListMenu, messages));
             command("rankup").setExecutor(new RankupCommand(rankup, messages));
-            PlexonRanksCommand adminCommand = new PlexonRanksCommand(this, configs, ranks, messages, adminMenu, backups);
+            PlexonRanksCommand adminCommand = new PlexonRanksCommand(
+                    this, configs, ranks, messages, adminMenu, backups, database,
+                    vault, luckPerms, placeholders, discord, core);
             command("plexonranks").setExecutor(adminCommand);
             command("plexonranks").setTabCompleter(adminCommand);
 
@@ -97,23 +117,49 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             Bukkit.getServicesManager().register(PlexonRanksAPI.class, api, this, ServicePriority.Normal);
             if (placeholders.connected()) {
                 expansion = new PlexonRanksExpansion(this, configs, ranks, render);
-                expansion.register();
+                if (!expansion.register()) {
+                    getLogger().warning("PlaceholderAPI was present but the plexonranks expansion did not register.");
+                    expansion = null;
+                }
             }
+
             Bukkit.getOnlinePlayers().forEach(player -> ranks.load(player.getUniqueId()));
-            startupSummary(vault, luckPerms, placeholders, discord);
+            publishCoreHealth();
+            startupSummary();
         } catch (Exception exception) {
-            getLogger().severe("PlexonRanks could not start safely: " + exception.getMessage());
-            exception.printStackTrace();
+            if (core != null) {
+                core.markFailed("Rank startup failed: " + exception.getClass().getSimpleName());
+            }
+            getLogger().log(Level.SEVERE, "PlexonRanks could not start safely; disabling without partial operation", exception);
+            shutdown();
             Bukkit.getPluginManager().disablePlugin(this);
         }
     }
 
     @Override
     public void onDisable() {
-        if (rankListMenu != null) rankListMenu.stop();
-        if (expansion != null) expansion.unregister();
+        shutdown();
+    }
+
+    private void shutdown() {
+        if (rankListMenu != null) {
+            rankListMenu.stop();
+            rankListMenu = null;
+        }
+        if (expansion != null) {
+            expansion.unregister();
+            expansion = null;
+        }
         Bukkit.getServicesManager().unregisterAll(this);
-        if (database != null) database.close();
+        api = null;
+        if (database != null) {
+            database.close();
+            database = null;
+        }
+        if (core != null) {
+            core.unregister();
+            core = null;
+        }
     }
 
     public PlexonRanksAPI api() {
@@ -124,7 +170,26 @@ public final class PlexonRanksPlugin extends JavaPlugin {
         return Objects.requireNonNull(getCommand(name), "Command missing from plugin.yml: " + name);
     }
 
-    private void startupSummary(VaultHook vault, LuckPermsHook luckPerms, PlaceholderHook placeholders, DiscordSrvHook discord) {
+    private void publishCoreHealth() {
+        if (core == null) return;
+
+        List<String> degraded = new ArrayList<>();
+        if (configs.current().config().getBoolean("integrations.placeholderapi", true) && !placeholders.connected()) {
+            degraded.add("PlaceholderAPI enabled but unavailable");
+        }
+        if (configs.current().config().getBoolean("integrations.discordsrv", false) && !discord.connected()) {
+            degraded.add("DiscordSRV enabled but unavailable");
+        }
+
+        String readyDetail = "Rank engine ready; " + configs.current().registry().ordered().size() + " ranks loaded";
+        if (degraded.isEmpty()) {
+            core.markReady(readyDetail);
+        } else {
+            core.markDegraded(readyDetail + "; " + String.join(", ", degraded));
+        }
+    }
+
+    private void startupSummary() {
         getLogger().info("PlexonRanks " + getPluginMeta().getVersion());
         getLogger().info(" • Ranks: " + configs.current().registry().ordered().size());
         getLogger().info(" • Storage: SQLite");
@@ -132,6 +197,10 @@ public final class PlexonRanksPlugin extends JavaPlugin {
         getLogger().info(" • LuckPerms: " + status(luckPerms.connected()));
         getLogger().info(" • PlaceholderAPI: " + status(placeholders.connected()));
         getLogger().info(" • DiscordSRV: " + (discord.connected() ? "CONNECTED" : "DISABLED"));
+        getLogger().info(" • PlexonCore: " + (core.installed()
+                ? core.mode() + " API " + core.apiVersion()
+                : "STANDALONE"));
+        getLogger().info(" • Module: " + core.registrationState());
         getLogger().info(" • MiniMessage: " + (configs.current().config().getBoolean("formatting.minimessage", true)
                 ? "ENABLED" : "DISABLED"));
     }

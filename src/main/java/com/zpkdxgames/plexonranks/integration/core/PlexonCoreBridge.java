@@ -10,6 +10,7 @@ import com.zpkdxgames.plexoncore.module.ModuleRegistry.ModuleVersionRange;
 import java.time.Instant;
 import java.util.Set;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -33,7 +34,7 @@ public final class PlexonCoreBridge implements CoreBridge {
             "rankup-transaction-id",
             "luckperms-sync");
 
-    private final JavaPlugin plugin;
+    private final Plugin plugin;
     private final PlexonCoreAPI core;
     private final CoreVersion version;
     private final boolean compatible;
@@ -42,18 +43,26 @@ public final class PlexonCoreBridge implements CoreBridge {
     private String detail = "PlexonCore API resolved";
 
     public PlexonCoreBridge(JavaPlugin plugin) {
+        this(plugin, resolveApi());
+    }
+
+    PlexonCoreBridge(Plugin plugin, PlexonCoreAPI core) {
         this.plugin = plugin;
-        RegisteredServiceProvider<PlexonCoreAPI> registration =
-                Bukkit.getServicesManager().getRegistration(PlexonCoreAPI.class);
-        if (registration == null) {
-            throw new IllegalStateException("PlexonCore API service is not registered");
-        }
-        this.core = registration.getProvider();
+        this.core = core;
         this.version = core.version();
         this.compatible = ModuleVersionRange.parse(SUPPORTED_API_RANGE).contains(version);
         if (!compatible) {
             detail = "Core API " + version.apiVersion() + " is outside supported range " + SUPPORTED_API_RANGE;
         }
+    }
+
+    private static PlexonCoreAPI resolveApi() {
+        RegisteredServiceProvider<PlexonCoreAPI> registration =
+                Bukkit.getServicesManager().getRegistration(PlexonCoreAPI.class);
+        if (registration == null) {
+            throw new IllegalStateException("PlexonCore API service is not registered");
+        }
+        return registration.getProvider();
     }
 
     @Override

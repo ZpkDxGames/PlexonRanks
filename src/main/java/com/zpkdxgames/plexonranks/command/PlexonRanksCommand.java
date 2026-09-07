@@ -1,9 +1,17 @@
 package com.zpkdxgames.plexonranks.command;
 
+import com.zpkdxgames.plexonranks.api.PlexonRanksAPI;
 import com.zpkdxgames.plexonranks.config.ConfigManager;
 import com.zpkdxgames.plexonranks.config.ReloadResult;
+import com.zpkdxgames.plexonranks.database.DatabaseManager;
 import com.zpkdxgames.plexonranks.event.PlexonRankChangeEvent;
+import com.zpkdxgames.plexonranks.event.PlexonRankupEvent;
 import com.zpkdxgames.plexonranks.event.RankChangeCause;
+import com.zpkdxgames.plexonranks.integration.DiscordSrvHook;
+import com.zpkdxgames.plexonranks.integration.LuckPermsHook;
+import com.zpkdxgames.plexonranks.integration.PlaceholderHook;
+import com.zpkdxgames.plexonranks.integration.VaultHook;
+import com.zpkdxgames.plexonranks.integration.core.CoreBridge;
 import com.zpkdxgames.plexonranks.menu.AdminRankMenu;
 import com.zpkdxgames.plexonranks.model.Rank;
 import com.zpkdxgames.plexonranks.model.ValidationIssue;
@@ -21,7 +29,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -30,7 +37,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
-    private static final List<String> SUBCOMMANDS = List.of("help", "reload", "admin", "info", "setrank",
+    private static final List<String> SUBCOMMANDS = List.of("help", "reload", "admin", "info", "diagnostics", "setrank",
             "resetrank", "promote", "demote", "sync", "validate", "backup");
     private final JavaPlugin plugin;
     private final ConfigManager configs;
@@ -38,16 +45,30 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
     private final MessageService messages;
     private final AdminRankMenu adminMenu;
     private final BackupService backups;
+    private final DatabaseManager database;
+    private final VaultHook vault;
+    private final LuckPermsHook luckPerms;
+    private final PlaceholderHook placeholders;
+    private final DiscordSrvHook discord;
+    private final CoreBridge core;
     private final Map<String, PendingReset> resets = new HashMap<>();
 
     public PlexonRanksCommand(JavaPlugin plugin, ConfigManager configs, RankService ranks, MessageService messages,
-                              AdminRankMenu adminMenu, BackupService backups) {
+                              AdminRankMenu adminMenu, BackupService backups, DatabaseManager database,
+                              VaultHook vault, LuckPermsHook luckPerms, PlaceholderHook placeholders,
+                              DiscordSrvHook discord, CoreBridge core) {
         this.plugin = plugin;
         this.configs = configs;
         this.ranks = ranks;
         this.messages = messages;
         this.adminMenu = adminMenu;
         this.backups = backups;
+        this.database = database;
+        this.vault = vault;
+        this.luckPerms = luckPerms;
+        this.placeholders = placeholders;
+        this.discord = discord;
+        this.core = core;
     }
 
     @Override
@@ -63,6 +84,7 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
                 if (sender instanceof Player player) adminMenu.openList(player, 1); else messages.send(sender, "generic.players-only");
             }
             case "info" -> info(sender, args);
+            case "diagnostics" -> diagnostics(sender);
             case "setrank" -> setRank(sender, args, RankChangeCause.ADMIN_SET);
             case "promote" -> shift(sender, args, true);
             case "demote" -> shift(sender, args, false);
@@ -103,6 +125,34 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
         result.issues().stream().limit(20).forEach(issue -> sender.sendMessage(messages.component(
                 issue.severity() == ValidationIssue.Severity.ERROR ? "admin.validation-error" : "admin.validation-warning",
                 Map.of("source", issue.source(), "message", issue.message()))));
+    }
+
+    private void diagnostics(CommandSender sender) {
+        long cachedOnline = Bukkit.getOnlinePlayers().stream()
+                .filter(player -> ranks.loaded(player.getUniqueId()))
+                .count();
+        String economyProvider = vault.economy().map(provider -> provider.getName()).orElse("-");
+        boolean apiRegistered = Bukkit.getServicesManager().getRegistration(PlexonRanksAPI.class) != null;
+
+        sender.sendMessage("PlexonRanks Diagnostics");
+        sender.sendMessage("  Version ............ " + plugin.getPluginMeta().getVersion());
+        sender.sendMessage("  Paper .............. " + Bukkit.getVersion());
+        sender.sendMessage("  Java ............... " + Runtime.version());
+        sender.sendMessage("  Database ........... READY (" + database.databasePath().getFileName() + ")");
+        sender.sendMessage("  Loaded ranks ....... " + configs.current().registry().ordered().size());
+        sender.sendMessage("  Online cached ...... " + cachedOnline + "/" + Bukkit.getOnlinePlayers().size());
+        sender.sendMessage("  Vault .............. " + status(vault.connected()));
+        sender.sendMessage("  Economy provider ... " + economyProvider);
+        sender.sendMessage("  LuckPerms .......... " + status(luckPerms.connected()));
+        sender.sendMessage("  PlaceholderAPI ..... " + status(placeholders.connected()));
+        sender.sendMessage("  DiscordSRV ......... " + (discord.connected() ? "CONNECTED" : "DISABLED/UNAVAILABLE"));
+        sender.sendMessage("  PlexonCore ......... " + (core.installed() ? core.pluginVersion() : "NOT INSTALLED"));
+        sender.sendMessage("  Core API ........... " + core.apiVersion() + " (supported " + CoreBridge.SUPPORTED_API_RANGE + ")");
+        sender.sendMessage("  Core mode .......... " + core.mode());
+        sender.sendMessage("  Core module ........ " + core.registrationState());
+        sender.sendMessage("  Core detail ........ " + core.detail());
+        sender.sendMessage("  Public API ......... " + (apiRegistered ? "REGISTERED" : "MISSING"));
+        sender.sendMessage("  Rankup contract .... " + PlexonRankupEvent.class.getName() + " / transactionId");
     }
 
     private void info(CommandSender sender, String[] args) {
@@ -230,6 +280,7 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
             case "reload" -> "plexonranks.admin.reload";
             case "admin" -> "plexonranks.admin.editor";
             case "info" -> "plexonranks.admin.info";
+            case "diagnostics" -> "plexonranks.admin.diagnostics";
             case "setrank" -> "plexonranks.admin.setrank";
             case "resetrank" -> "plexonranks.admin.reset";
             case "promote" -> "plexonranks.admin.promote";
@@ -254,6 +305,10 @@ public final class PlexonRanksCommand implements CommandExecutor, TabCompleter {
 
     private static String safeName(OfflinePlayer player) {
         return player.getName() == null ? player.getUniqueId().toString() : player.getName();
+    }
+
+    private static String status(boolean connected) {
+        return connected ? "CONNECTED" : "UNAVAILABLE";
     }
 
     @Override

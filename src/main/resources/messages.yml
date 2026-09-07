@@ -1,4 +1,4 @@
-# PlexonRanks 2.0 — every player-facing chat line
+# PlexonRanks 2.1 — every player-facing chat line
 schema-version: 2
 prefix: "<dark_gray>[</dark_gray><gradient:#4158D0:#C850C0><bold>PlexonRanks</bold></gradient><dark_gray>]</dark_gray> "
 
@@ -68,6 +68,7 @@ admin:
     - "<yellow>/plexonranks admin</yellow> <dark_gray>—</dark_gray> <gray>Open the visual rank editor.</gray>"
     - "<yellow>/plexonranks reload</yellow> <dark_gray>—</dark_gray> <gray>Validate and atomically reload.</gray>"
     - "<yellow>/plexonranks validate</yellow> <dark_gray>—</dark_gray> <gray>Inspect configuration health.</gray>"
+    - "<yellow>/plexonranks diagnostics</yellow> <dark_gray>—</dark_gray> <gray>Inspect runtime, providers, DB and PlexonCore state.</gray>"
     - "<yellow>/plexonranks info <player></yellow> <dark_gray>—</dark_gray> <gray>Inspect saved progression.</gray>"
     - "<yellow>/plexonranks setrank <player> <rank></yellow> <dark_gray>—</dark_gray> <gray>Set without consumable rewards.</gray>"
     - "<yellow>/plexonranks promote|demote <player> [amount]</yellow>"

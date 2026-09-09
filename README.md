@@ -2,7 +2,7 @@
 
 PlexonRanks is the rank progression module for the PlexonCraft ecosystem. It owns rank definitions, requirements, rank-up transactions, rewards, player rank persistence, GUIs, commands, placeholders, public APIs, and rank-domain events.
 
-## 2.1.0 platform
+## 2.2.0 platform
 
 - Paper 26.2
 - Java 25
@@ -10,6 +10,8 @@ PlexonRanks is the rank progression module for the PlexonCraft ecosystem. It own
 - PlexonCore 1.0.0 / Core API 1.x supported through an optional bridge
 
 PlexonCore provides ecosystem registration, health reporting, shared integration discovery hints, and diagnostics. PlexonRanks continues to own all rank gameplay and data.
+
+Version 2.2.0 focuses on reducing repeated main-thread work from PlaceholderAPI, rank-menu rendering, requirement evaluation, LuckPerms reconciliation, and database scheduling while preserving the existing rank progression contract and SQLite data.
 
 ## Required plugins
 
@@ -52,7 +54,9 @@ See [docs/PLEXONCORE.md](docs/PLEXONCORE.md).
 
 ## Persistence
 
-PlexonRanks keeps its own SQLite database under `plugins/PlexonRanks/`. Rank-up persistence uses guarded transactions and stable transaction IDs. Version 2.1.0 does not require a database reset or destructive schema migration.
+PlexonRanks keeps its own SQLite database under `plugins/PlexonRanks/`. Rank-up persistence uses guarded transactions and stable transaction IDs. Version 2.2.0 preserves the existing database schema and does not require a player-data reset or destructive migration.
+
+Database work remains serialized for SQLite correctness, but 2.2.0 uses a bounded queue with controlled shutdown draining and basic queue instrumentation rather than an unbounded executor queue.
 
 ## Public API and events
 
@@ -62,7 +66,7 @@ See [docs/API.md](docs/API.md).
 
 ## Configuration
 
-Existing `config.yml`, `ranks.yml`, `messages.yml`, and menu configuration remain valid for the 2.1.0 infrastructure migration. Rank IDs, requirement math, rewards, progression balance, and player data are not intentionally changed by this release.
+Existing `config.yml`, `ranks.yml`, `messages.yml`, and menu configuration remain compatible with 2.2.0. The release adds optional performance settings for PlaceholderAPI cache lifetime and database queue capacity without changing rank IDs, requirement math, rewards, progression balance, or player data.
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
@@ -82,11 +86,13 @@ The final distribution check verifies that:
 - PlexonCore runtime classes are not shaded into PlexonRanks
 - `SHA256SUMS.txt` validates successfully
 
-## Upgrade from 2.0.3
+## Upgrade from 2.1.0
 
-Stop the server, replace `PlexonRanks-2.0.3.jar` with `PlexonRanks-2.1.0.jar`, keep the existing `plugins/PlexonRanks/` directory, then start the server and validate `/plexon modules`, `/plexon diagnostics`, `/plexonranks diagnostics`, `/rank`, `/ranks`, and one controlled `/rankup`.
+Stop the server, back up `plugins/PlexonRanks/`, replace `PlexonRanks-2.1.0.jar` with `PlexonRanks-2.2.0.jar`, keep the existing data/configuration directory, then start the server and validate `/plexonranks diagnostics`, `/rank`, `/ranks`, and a controlled `/rankup`.
 
-See [docs/MIGRATION_2.1.0.md](docs/MIGRATION_2.1.0.md).
+No database reset is required. A Spark/profile pass under your normal PlaceholderAPI and GUI load is recommended after deployment to confirm the expected reduction in PlexonRanks server-thread work on the target server stack.
+
+See [docs/MIGRATION_2.2.0.md](docs/MIGRATION_2.2.0.md).
 
 ## License
 

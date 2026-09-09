@@ -1,6 +1,7 @@
 package com.zpkdxgames.plexonranks.menu;
 
 import com.zpkdxgames.plexonranks.config.ConfigManager;
+import com.zpkdxgames.plexonranks.config.RuntimeSettings;
 import com.zpkdxgames.plexonranks.model.Rank;
 import com.zpkdxgames.plexonranks.model.RankState;
 import com.zpkdxgames.plexonranks.model.RequirementProgress;
@@ -20,10 +21,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 public final class RankListMenu implements Listener {
     private final JavaPlugin plugin;
@@ -31,6 +36,7 @@ public final class RankListMenu implements Listener {
     private final RankService ranks;
     private final RankupService rankup;
     private final RenderService render;
+    private final Set<UUID> activeViewers = new LinkedHashSet<>();
     private BukkitTask refreshTask;
 
     public RankListMenu(JavaPlugin plugin, ConfigManager configs, RankService ranks,
@@ -47,18 +53,19 @@ public final class RankListMenu implements Listener {
             ranks.load(player.getUniqueId());
             return;
         }
-        List<Integer> slots = rankSlots();
+        RuntimeSettings.RankMenu menu = configs.current().settings().rankMenu();
+        List<Integer> slots = menu.rankSlots();
         List<Rank> visible = visibleRanks(player);
         int pages = Math.max(1, (int) Math.ceil(visible.size() / (double) slots.size()));
         int page = Math.max(1, Math.min(pages, requestedPage));
-        int size = configs.current().menus().getInt("rank-list.size", 54);
         Map<String, String> titleValues = Map.of("page", String.valueOf(page), "pages", String.valueOf(pages));
         RankListHolder holder = new RankListHolder(page, pages);
-        Inventory inventory = Bukkit.createInventory(holder, size,
-                configs.formatter().component(configs.current().menus().getString("rank-list.title", "Plexon Ranks"), titleValues));
+        Inventory inventory = Bukkit.createInventory(holder, menu.size(),
+                configs.formatter().component(menu.title(), titleValues));
         holder.attach(inventory);
         draw(player, holder, inventory, visible, slots);
         player.openInventory(inventory);
+        activeViewers.add(player.getUniqueId());
         ensureRefreshTask();
     }
 
@@ -74,18 +81,20 @@ public final class RankListMenu implements Listener {
         holder.pagination(page, pages);
         Rank current = ranks.current(player.getUniqueId()).orElse(configs.current().registry().defaultRank());
         Optional<Rank> next = configs.current().registry().nextAccessible(current, player::hasPermission);
+        List<RequirementProgress> nextProgress = next.map(rank -> render.progress(player, rank)).orElseGet(List::of);
         int offset = (holder.page() - 1) * usableSlots.size();
         for (int index = 0; index < usableSlots.size() && offset + index < visible.size(); index++) {
             Rank rank = visible.get(offset + index);
             RankState state = state(current, next, rank);
             int slot = usableSlots.get(index);
-            inventory.setItem(slot, rankItem(player, current, rank, state));
+            inventory.setItem(slot, rankItem(player, current, rank, state, nextProgress));
             holder.rank(slot, rank.id(), state);
         }
-        navigation(player, current, next, holder, inventory);
+        navigation(player, current, next, nextProgress, holder, inventory);
     }
 
-    private ItemStack rankItem(Player player, Rank current, Rank rank, RankState state) {
+    private ItemStack rankItem(Player player, Rank current, Rank rank, RankState state,
+                               List<RequirementProgress> nextProgress) {
         String statePath = "rank-list.states." + state.name().toLowerCase();
         String material = rank.menu().material().isBlank()
                 ? configs.current().menus().getString(statePath + ".material", "PAPER")
@@ -97,7 +106,10 @@ public final class RankListMenu implements Listener {
         List<String> lore = rank.menu().useGlobalTemplate() || rank.menu().lore().isEmpty()
                 ? configs.current().menus().getStringList("rank-list.rank-template.lore")
                 : rank.menu().lore();
-        List<RequirementProgress> progress = render.progress(player, rank);
+        boolean achieved = state == RankState.COMPLETED || state == RankState.CURRENT || state == RankState.MAX;
+        List<RequirementProgress> progress = state == RankState.NEXT
+                ? nextProgress
+                : render.staticProgress(rank, achieved);
         Map<String, String> values = render.placeholders(player, current, rank, progress, state);
         List<String> expanded = render.expand(lore, rank, state,
                 render.requirementLines(progress), render.rewardLines(rank));
@@ -105,8 +117,11 @@ public final class RankListMenu implements Listener {
                 rank.menu().customModelData(), values);
     }
 
-    private void navigation(Player player, Rank current, Optional<Rank> next, RankListHolder holder, Inventory inventory) {
-        Map<String, String> values = new LinkedHashMap<>(render.placeholders(player, current, next));
+    private void navigation(Player player, Rank current, Optional<Rank> next,
+                            List<RequirementProgress> nextProgress, RankListHolder holder, Inventory inventory) {
+        Map<String, String> values = new LinkedHashMap<>(next
+                .map(rank -> render.placeholders(player, current, rank, nextProgress, RankState.NEXT))
+                .orElseGet(() -> render.placeholders(player, current, Optional.empty())));
         values.put("page", String.valueOf(holder.page()));
         values.put("pages", String.valueOf(holder.pages()));
         values.put("previous_page", String.valueOf(Math.max(1, holder.page() - 1)));
@@ -121,7 +136,13 @@ public final class RankListMenu implements Listener {
         String path = "rank-list.navigation." + key;
         ConfigurationSection section = configs.current().menus().getConfigurationSection(path);
         if (section == null) return;
-        int slot = section.getInt("slot", -1);
+        int slot = switch (key) {
+            case "previous" -> configs.current().settings().rankMenu().previousSlot();
+            case "info" -> configs.current().settings().rankMenu().infoSlot();
+            case "close" -> configs.current().settings().rankMenu().closeSlot();
+            case "next" -> configs.current().settings().rankMenu().nextSlot();
+            default -> section.getInt("slot", -1);
+        };
         if (slot < 0 || slot >= inventory.getSize()) return;
         inventory.setItem(slot, MenuItems.create(configs.formatter(), section.getString("material", "PAPER"), 1,
                 section.getString("name", key), section.getStringList("lore"), section.getBoolean("glow", false),
@@ -129,13 +150,13 @@ public final class RankListMenu implements Listener {
     }
 
     private void fill(Inventory inventory) {
-        if (!configs.current().menus().getBoolean("rank-list.filler.enabled", true)) {
+        RuntimeSettings.RankMenu menu = configs.current().settings().rankMenu();
+        if (!menu.fillerEnabled()) {
             inventory.clear();
             return;
         }
-        ItemStack filler = MenuItems.create(configs.formatter(),
-                configs.current().menus().getString("rank-list.filler.material", "GRAY_STAINED_GLASS_PANE"), 1,
-                configs.current().menus().getString("rank-list.filler.name", " "), List.of(), false, 0, Map.of());
+        ItemStack filler = MenuItems.create(configs.formatter(), menu.fillerMaterial(), 1,
+                menu.fillerName(), List.of(), false, 0, Map.of());
         for (int slot = 0; slot < inventory.getSize(); slot++) inventory.setItem(slot, filler);
     }
 
@@ -149,18 +170,16 @@ public final class RankListMenu implements Listener {
         String rankId = holder.rankAt(slot);
         if (rankId != null) {
             if (holder.stateAt(slot) == RankState.NEXT && event.isRightClick()
-                    && configs.current().config().getBoolean("rankup.right-click-next-rank", true)) {
+                    && configs.current().settings().rightClickRankup()) {
                 player.closeInventory();
                 rankup.attempt(player);
             }
             return;
         }
-        int previous = configs.current().menus().getInt("rank-list.navigation.previous.slot", 45);
-        int next = configs.current().menus().getInt("rank-list.navigation.next.slot", 53);
-        int close = configs.current().menus().getInt("rank-list.navigation.close.slot", 50);
-        if (slot == previous && holder.page() > 1) open(player, holder.page() - 1);
-        else if (slot == next && holder.page() < holder.pages()) open(player, holder.page() + 1);
-        else if (slot == close) player.closeInventory();
+        RuntimeSettings.RankMenu menu = configs.current().settings().rankMenu();
+        if (slot == menu.previousSlot() && holder.page() > 1) open(player, holder.page() - 1);
+        else if (slot == menu.nextSlot() && holder.page() < holder.pages()) open(player, holder.page() + 1);
+        else if (slot == menu.closeSlot()) player.closeInventory();
     }
 
     @EventHandler
@@ -172,45 +191,68 @@ public final class RankListMenu implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent event) {
-        if (refreshTask != null) Bukkit.getScheduler().runTask(plugin, this::stopRefreshWhenUnused);
+        if (!(event.getInventory().getHolder() instanceof RankListHolder) || !(event.getPlayer() instanceof Player player)) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!(player.getOpenInventory().getTopInventory().getHolder() instanceof RankListHolder)) {
+                activeViewers.remove(player.getUniqueId());
+                stopRefreshWhenUnused();
+            }
+        });
+    }
+
+    public void reload() {
+        if (refreshTask != null) {
+            refreshTask.cancel();
+            refreshTask = null;
+        }
+        ensureRefreshTask();
     }
 
     public void stop() {
+        activeViewers.clear();
         if (refreshTask != null) {
             refreshTask.cancel();
             refreshTask = null;
         }
     }
 
+    public int activeViewerCount() {
+        return activeViewers.size();
+    }
+
     private void ensureRefreshTask() {
-        if (!configs.current().menus().getBoolean("rank-list.refresh.enabled", true) || refreshTask != null) return;
-        long interval = Math.max(20L, configs.current().menus().getLong("rank-list.refresh.interval-ticks", 40L));
+        RuntimeSettings.RankMenu menu = configs.current().settings().rankMenu();
+        if (!menu.refreshEnabled() || refreshTask != null || activeViewers.isEmpty()) return;
+        long interval = menu.refreshIntervalTicks();
         refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            for (Player viewer : Bukkit.getOnlinePlayers()) {
+            for (UUID viewerId : new ArrayList<>(activeViewers)) {
+                Player viewer = Bukkit.getPlayer(viewerId);
+                if (viewer == null || !viewer.isOnline()) {
+                    activeViewers.remove(viewerId);
+                    continue;
+                }
                 Inventory top = viewer.getOpenInventory().getTopInventory();
                 if (top.getHolder() instanceof RankListHolder holder) {
-                    draw(viewer, holder, top, visibleRanks(viewer), rankSlots());
+                    draw(viewer, holder, top, visibleRanks(viewer), configs.current().settings().rankMenu().rankSlots());
+                } else {
+                    activeViewers.remove(viewerId);
                 }
             }
+            stopRefreshWhenUnused();
         }, interval, interval);
     }
 
     private void stopRefreshWhenUnused() {
-        if (refreshTask != null && Bukkit.getOnlinePlayers().stream()
-                .noneMatch(player -> player.getOpenInventory().getTopInventory().getHolder() instanceof RankListHolder)) {
+        if (refreshTask != null && activeViewers.isEmpty()) {
             refreshTask.cancel();
             refreshTask = null;
         }
     }
 
-    private List<Integer> rankSlots() {
-        List<Integer> slots = configs.current().menus().getIntegerList("rank-list.rank-slots");
-        return slots.isEmpty() ? List.of(10, 11, 12, 13, 14, 15, 16) : slots;
-    }
-
     private List<Rank> visibleRanks(Player player) {
-        return configs.current().registry().ordered().stream()
-                .filter(Rank::visible)
+        return configs.current().registry().visible().stream()
                 .filter(rank -> rank.bypassPermission().isBlank() || player.hasPermission(rank.bypassPermission()))
                 .toList();
     }

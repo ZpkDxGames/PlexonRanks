@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.2.0
+
+### Performance
+
+- Added immutable parsed runtime settings for frequently-read configuration values.
+- Added indexed rank-registry position/successor lookup and precomputed visible rank views.
+- PlaceholderAPI now uses parameter-first fast paths so current-rank placeholders do not resolve next-rank requirements.
+- Added short-lived per-player PlaceholderAPI display snapshots and formatted rank-text caching.
+- Added recursion protection for nested `%plexonranks_*%` placeholder evaluation.
+- Rank GUI refreshes now track only active viewers instead of scanning all online players.
+- Rank GUI live requirement evaluation is limited to the next rank and shared across the card/navigation render pass.
+- ITEM requirements now use a single inventory aggregation pass where possible.
+- Persistent LuckPerms grant plans are precomputed per rank/config generation and reconciled in one user mutation.
+
+### Reliability
+
+- Added authoritative post-pre-event `RequirementPlan` evaluation for rank-up consumption.
+- Batched ITEM consumption retains rollback support on failed rank transactions.
+- Rank-up cooldown timing now uses monotonic time and clears state on player quit.
+- SQLite scheduling remains serialized but is now bounded with explicit rejection/backpressure and queue instrumentation.
+- Database shutdown drains queued operations before closing the SQLite connection.
+- In-flight rank loading/reconciliation is deduplicated.
+- Placeholder/menu/player caches are invalidated on quit, reload, and shutdown.
+
+### Configuration
+
+- Added `performance.placeholder-cache-ticks` for the short-lived PlaceholderAPI display cache.
+- Added `performance.database.queue-capacity` for bounded serialized SQLite scheduling.
+- Existing configuration schema and production rank definitions remain compatible.
+
+### Tests and compatibility
+
+- Added regression coverage for indexed rank views, requirement-plan invariants, and database queue instrumentation.
+- Java 25 / Paper 26.2 remain the target platform.
+- Existing `PlexonRanksAPI` and rank event contracts remain preserved.
+- Existing SQLite schema, player rank data, transaction IDs, rank IDs/order, requirements, rewards, and progression semantics are preserved.
+
+No player-data reset or destructive database migration is required for 2.2.0.
+
 ## 2.1.0
 
 ### Added

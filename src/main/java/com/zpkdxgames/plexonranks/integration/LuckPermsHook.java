@@ -8,8 +8,9 @@ import net.luckperms.api.node.types.PermissionNode;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Locale;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -26,31 +27,47 @@ public final class LuckPermsHook {
     }
 
     public CompletableFuture<Void> addPermissions(UUID uuid, Collection<String> permissions) {
-        if (luckPerms == null || permissions.isEmpty()) {
+        return applyPersistentGrants(uuid, permissions, List.of());
+    }
+
+    public CompletableFuture<Void> addGroup(UUID uuid, String groupName, String mode) {
+        if (groupName.isBlank()) {
             return CompletableFuture.completedFuture(null);
         }
+        return applyPersistentGrants(uuid, List.of(), List.of(new GroupGrant(groupName, mode)));
+    }
+
+    public CompletableFuture<Void> applyPersistentGrants(UUID uuid, Collection<String> permissions,
+                                                          Collection<GroupGrant> groups) {
+        if (luckPerms == null || (permissions.isEmpty() && groups.isEmpty())) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        List<ResolvedGroupGrant> resolvedGroups = new ArrayList<>();
+        for (GroupGrant grant : groups) {
+            if (grant.group().isBlank()) {
+                continue;
+            }
+            Group group = luckPerms.getGroupManager().getGroup(grant.group());
+            if (group == null) {
+                return CompletableFuture.failedFuture(
+                        new IllegalArgumentException("LuckPerms group does not exist: " + grant.group()));
+            }
+            resolvedGroups.add(new ResolvedGroupGrant(group, grant.mode()));
+        }
+
         return luckPerms.getUserManager().modifyUser(uuid, user -> {
             for (String permission : permissions) {
                 if (!permission.isBlank()) {
                     user.data().add(PermissionNode.builder(permission).value(true).build());
                 }
             }
-        }).thenApply(ignored -> null);
-    }
-
-    public CompletableFuture<Void> addGroup(UUID uuid, String groupName, String mode) {
-        if (luckPerms == null || groupName.isBlank()) {
-            return CompletableFuture.completedFuture(null);
-        }
-        Group group = luckPerms.getGroupManager().getGroup(groupName);
-        if (group == null) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("LuckPerms group does not exist: " + groupName));
-        }
-        return luckPerms.getUserManager().modifyUser(uuid, user -> {
-            Node node = InheritanceNode.builder(group.getName()).build();
-            user.data().add(node);
-            if ("SET_PRIMARY".equalsIgnoreCase(mode)) {
-                user.setPrimaryGroup(group.getName());
+            for (ResolvedGroupGrant grant : resolvedGroups) {
+                Node node = InheritanceNode.builder(grant.group().getName()).build();
+                user.data().add(node);
+                if ("SET_PRIMARY".equalsIgnoreCase(grant.mode())) {
+                    user.setPrimaryGroup(grant.group().getName());
+                }
             }
         }).thenApply(ignored -> null);
     }
@@ -61,5 +78,15 @@ public final class LuckPermsHook {
         }
         var user = luckPerms.getUserManager().getUser(uuid);
         return user == null ? "" : user.getPrimaryGroup();
+    }
+
+    public record GroupGrant(String group, String mode) {
+        public GroupGrant {
+            group = group == null ? "" : group.trim();
+            mode = mode == null || mode.isBlank() ? "ADD" : mode.trim();
+        }
+    }
+
+    private record ResolvedGroupGrant(Group group, String mode) {
     }
 }

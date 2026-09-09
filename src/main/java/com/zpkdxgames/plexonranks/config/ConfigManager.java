@@ -101,9 +101,10 @@ public final class ConfigManager {
             YamlConfiguration ranksYaml = YamlConfiguration.loadConfiguration(file("ranks.yml"));
             YamlConfiguration menus = YamlConfiguration.loadConfiguration(file("menus.yml"));
             YamlConfiguration messages = YamlConfiguration.loadConfiguration(file("messages.yml"));
+            RuntimeSettings settings = RuntimeSettings.parse(config, menus);
             TextFormatter candidateFormatter = new TextFormatter(
-                    config.getBoolean("formatting.minimessage", true),
-                    config.getBoolean("formatting.legacy-ampersand-support", true));
+                    settings.miniMessage(),
+                    settings.legacyAmpersandSupport());
             RankParser.ParseResult parsed = rankParser.parse(ranksYaml);
             issues.addAll(parsed.issues());
             issues.addAll(validator.validate(config, ranksYaml, menus, messages, parsed.ranks(), candidateFormatter));
@@ -111,7 +112,15 @@ public final class ConfigManager {
                 return new LoadAttempt(null, candidateFormatter, issues);
             }
             RankRegistry registry = new RankRegistry(parsed.ranks());
-            return new LoadAttempt(new ConfigSnapshot(config, ranksYaml, menus, messages, registry, issues), candidateFormatter, issues);
+            return new LoadAttempt(new ConfigSnapshot(
+                    config,
+                    ranksYaml,
+                    menus,
+                    messages,
+                    settings,
+                    registry,
+                    issues
+            ), candidateFormatter, issues);
         } catch (Exception exception) {
             plugin.getLogger().severe("Configuration parse failed: " + exception.getMessage());
             issues.add(new ValidationIssue(ValidationIssue.Severity.ERROR, "configuration", exception.getMessage()));

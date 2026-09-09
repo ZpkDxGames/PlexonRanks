@@ -68,7 +68,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PlexonRanks-2.1.0-${{ github.sha }}
+          name: PlexonRanks-2.2.0-${{ github.sha }}
           path: |
             target/PlexonRanks-*.jar
             target/SHA256SUMS.txt

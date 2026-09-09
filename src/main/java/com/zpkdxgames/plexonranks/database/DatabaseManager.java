@@ -13,20 +13,34 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 public final class DatabaseManager implements AutoCloseable {
     private static final int SCHEMA_VERSION = 1;
+    private static final int DEFAULT_QUEUE_CAPACITY = 1024;
+
     private final Logger logger;
     private final Path databasePath;
-    private final ExecutorService executor;
+    private final ThreadPoolExecutor executor;
+    private final int queueCapacity;
+    private final AtomicInteger queueHighWater = new AtomicInteger();
+    private final AtomicLong submitted = new AtomicLong();
+    private final AtomicLong completed = new AtomicLong();
+    private final AtomicLong failures = new AtomicLong();
     private Connection connection;
 
     public DatabaseManager(org.bukkit.plugin.java.JavaPlugin plugin, String configuredFile) {
+        this(plugin, configuredFile, DEFAULT_QUEUE_CAPACITY);
+    }
+
+    public DatabaseManager(org.bukkit.plugin.java.JavaPlugin plugin, String configuredFile, int queueCapacity) {
         this.logger = plugin.getLogger();
         Path dataFolder = plugin.getDataFolder().toPath().toAbsolutePath().normalize();
         Path resolved = dataFolder.resolve(configuredFile).normalize();
@@ -34,21 +48,19 @@ public final class DatabaseManager implements AutoCloseable {
             throw new IllegalArgumentException("SQLite file must remain inside the PlexonRanks data folder");
         }
         this.databasePath = resolved;
-        this.executor = Executors.newSingleThreadExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "PlexonRanks-Database");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.queueCapacity = Math.max(8, queueCapacity);
+        this.executor = createExecutor("PlexonRanks-Database", this.queueCapacity);
     }
 
     public DatabaseManager(Logger logger, Path databasePath) {
+        this(logger, databasePath, DEFAULT_QUEUE_CAPACITY);
+    }
+
+    public DatabaseManager(Logger logger, Path databasePath, int queueCapacity) {
         this.logger = logger;
         this.databasePath = databasePath.toAbsolutePath().normalize();
-        this.executor = Executors.newSingleThreadExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "PlexonRanks-Database-Testable");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.queueCapacity = Math.max(8, queueCapacity);
+        this.executor = createExecutor("PlexonRanks-Database-Testable", this.queueCapacity);
     }
 
     public void initialize() throws Exception {
@@ -217,6 +229,30 @@ public final class DatabaseManager implements AutoCloseable {
         return databasePath;
     }
 
+    public int queueDepth() {
+        return executor.getQueue().size();
+    }
+
+    public int queueCapacity() {
+        return queueCapacity;
+    }
+
+    public int queueHighWater() {
+        return queueHighWater.get();
+    }
+
+    public long submittedCount() {
+        return submitted.get();
+    }
+
+    public long completedCount() {
+        return completed.get();
+    }
+
+    public long failureCount() {
+        return failures.get();
+    }
+
     private void migrate() throws SQLException {
         int current = 0;
         try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT MAX(version) FROM pr_schema")) {
@@ -263,39 +299,68 @@ public final class DatabaseManager implements AutoCloseable {
 
     private <T> CompletableFuture<T> submit(SqlFunction<T> task) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        executor.execute(() -> {
-            try {
-                future.complete(task.apply(connection));
-            } catch (Throwable throwable) {
-                future.completeExceptionally(throwable);
-            }
-        });
+        submitted.incrementAndGet();
+        try {
+            executor.execute(() -> {
+                try {
+                    future.complete(task.apply(connection));
+                } catch (Throwable throwable) {
+                    failures.incrementAndGet();
+                    future.completeExceptionally(throwable);
+                } finally {
+                    completed.incrementAndGet();
+                }
+            });
+            queueHighWater.accumulateAndGet(executor.getQueue().size(), Math::max);
+        } catch (RejectedExecutionException exception) {
+            failures.incrementAndGet();
+            future.completeExceptionally(new IllegalStateException(
+                    "PlexonRanks database queue is full or shutting down (depth=" + queueDepth()
+                            + ", capacity=" + queueCapacity + ")", exception));
+        }
         return future;
     }
 
     @Override
     public void close() {
+        executor.shutdown();
         try {
-            CompletableFuture<Void> closeFuture = submit(connection -> {
-                if (connection != null && !connection.isClosed()) {
-                    connection.close();
-                }
-                return null;
-            });
-            closeFuture.get(5, TimeUnit.SECONDS);
-        } catch (Exception exception) {
-            logger.warning("Database did not close cleanly: " + exception.getMessage());
-        } finally {
-            executor.shutdown();
-            try {
-                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                int unfinished = executor.getQueue().size();
+                logger.warning("Database worker did not drain within 5s; cancelling " + unfinished + " queued operation(s).");
                 executor.shutdownNow();
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    logger.warning("Database worker still active after forced shutdown; closing SQLite connection defensively.");
+                }
             }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            executor.shutdownNow();
         }
+
+        try {
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException exception) {
+            logger.warning("Database did not close cleanly: " + exception.getMessage());
+        }
+    }
+
+    private static ThreadPoolExecutor createExecutor(String name, int queueCapacity) {
+        return new ThreadPoolExecutor(
+                1,
+                1,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(queueCapacity),
+                runnable -> {
+                    Thread thread = new Thread(runnable, name);
+                    thread.setDaemon(true);
+                    return thread;
+                },
+                new ThreadPoolExecutor.AbortPolicy()
+        );
     }
 
     @FunctionalInterface

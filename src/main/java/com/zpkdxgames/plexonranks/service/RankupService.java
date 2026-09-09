@@ -1,6 +1,7 @@
 package com.zpkdxgames.plexonranks.service;
 
 import com.zpkdxgames.plexonranks.config.ConfigManager;
+import com.zpkdxgames.plexonranks.config.RuntimeSettings;
 import com.zpkdxgames.plexonranks.database.DatabaseManager;
 import com.zpkdxgames.plexonranks.event.PlexonRankChangeEvent;
 import com.zpkdxgames.plexonranks.event.PlexonRankPreRankupEvent;
@@ -12,6 +13,7 @@ import com.zpkdxgames.plexonranks.model.RankState;
 import com.zpkdxgames.plexonranks.model.RequirementProgress;
 import com.zpkdxgames.plexonranks.requirement.Consumption;
 import com.zpkdxgames.plexonranks.requirement.RequirementEngine;
+import com.zpkdxgames.plexonranks.requirement.RequirementPlan;
 import com.zpkdxgames.plexonranks.reward.RewardEngine;
 import com.zpkdxgames.plexonranks.util.NumberFormats;
 import com.zpkdxgames.plexonranks.util.TextFormatter;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public final class RankupService {
     private final JavaPlugin plugin;
@@ -39,7 +42,7 @@ public final class RankupService {
     private final MessageService messages;
     private final DiscordSrvHook discord;
     private final Set<UUID> processing = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Long> lastAttempt = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastAttemptNanos = new ConcurrentHashMap<>();
 
     public RankupService(JavaPlugin plugin, ConfigManager configs, DatabaseManager database, RankService ranks,
                          RequirementEngine requirements, RewardEngine rewards, RenderService render,
@@ -66,18 +69,22 @@ public final class RankupService {
             messages.send(player, "generic.data-loading");
             return;
         }
-        long now = System.currentTimeMillis();
-        long cooldown = Math.max(0, configs.current().config().getLong("rankup.cooldown-ms", 750));
-        long remaining = cooldown - (now - lastAttempt.getOrDefault(uuid, 0L));
-        if (remaining > 0) {
-            messages.send(player, "rankup.cooldown", Map.of("seconds", NumberFormats.number(remaining / 1000.0)));
+
+        RuntimeSettings settings = configs.current().settings();
+        long now = System.nanoTime();
+        long cooldownNanos = TimeUnit.MILLISECONDS.toNanos(settings.rankupCooldownMillis());
+        long elapsed = now - lastAttemptNanos.getOrDefault(uuid, now - cooldownNanos);
+        long remainingNanos = cooldownNanos - elapsed;
+        if (remainingNanos > 0) {
+            messages.send(player, "rankup.cooldown", Map.of("seconds",
+                    NumberFormats.number(remainingNanos / 1_000_000_000.0)));
             return;
         }
         if (!processing.add(uuid)) {
             messages.send(player, "rankup.already-processing");
             return;
         }
-        lastAttempt.put(uuid, now);
+        lastAttemptNanos.put(uuid, now);
 
         Rank current = ranks.current(uuid).orElse(configs.current().registry().defaultRank());
         Optional<Rank> next = configs.current().registry().nextAccessible(current, player::hasPermission);
@@ -87,11 +94,11 @@ public final class RankupService {
             return;
         }
         Rank target = next.get();
-        List<RequirementProgress> progress = requirements.evaluate(player, target.requirements());
-        if (progress.stream().anyMatch(value -> !value.complete())) {
+        List<RequirementProgress> precheck = requirements.evaluate(player, target.requirements());
+        if (precheck.stream().anyMatch(value -> !value.complete())) {
             messages.send(player, "rankup.requirements-not-met",
-                    render.placeholders(player, current, target, progress, RankState.NEXT));
-            playConfiguredSound(player, "sounds.denied");
+                    render.placeholders(player, current, target, precheck, RankState.NEXT));
+            playConfiguredSound(player, settings.deniedSound());
             processing.remove(uuid);
             return;
         }
@@ -104,9 +111,18 @@ public final class RankupService {
             return;
         }
 
+        RequirementPlan plan = requirements.plan(player, target.requirements());
+        if (!plan.complete()) {
+            messages.send(player, "rankup.requirements-not-met",
+                    render.placeholders(player, current, target, plan.progress(), RankState.NEXT));
+            playConfiguredSound(player, settings.deniedSound());
+            processing.remove(uuid);
+            return;
+        }
+
         List<Consumption> consumed;
         try {
-            consumed = requirements.consume(player, target.requirements());
+            consumed = requirements.consume(player, plan);
         } catch (RuntimeException exception) {
             plugin.getLogger().warning("Rank-up consumption failed for " + player.getName() + ": " + exception.getMessage());
             List<RequirementProgress> refreshed = requirements.evaluate(player, target.requirements());
@@ -116,6 +132,7 @@ public final class RankupService {
             return;
         }
 
+        List<RequirementProgress> authoritativeProgress = plan.progress();
         String transactionId = UUID.randomUUID().toString();
         database.commitRankup(uuid, current.id(), target.id(), transactionId).whenComplete((committed, error) ->
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -129,7 +146,8 @@ public final class RankupService {
                     }
                     ranks.acceptCommitted(uuid, target);
                     Bukkit.getPluginManager().callEvent(new PlexonRankChangeEvent(player, current, target, RankChangeCause.RANKUP));
-                    Map<String, String> placeholders = render.placeholders(player, current, target, progress, RankState.NEXT);
+                    Map<String, String> placeholders = render.placeholders(player, current, target,
+                            authoritativeProgress, RankState.NEXT);
                     rewards.execute(player, target, placeholders).whenComplete((ignored, rewardError) ->
                             Bukkit.getScheduler().runTask(plugin, () -> finish(player, current, target, transactionId,
                                     placeholders, rewardError)));
@@ -138,6 +156,11 @@ public final class RankupService {
 
     public boolean processing(UUID uuid) {
         return processing.contains(uuid);
+    }
+
+    public void clearPlayerState(UUID uuid) {
+        processing.remove(uuid);
+        lastAttemptNanos.remove(uuid);
     }
 
     private void finish(Player player, Rank from, Rank to, String transactionId,
@@ -159,42 +182,40 @@ public final class RankupService {
     }
 
     private void feedback(Player player, Rank rank, Map<String, String> placeholders) {
-        if (player.isOnline() && configs.current().config().getBoolean("feedback.chat", true)) {
+        RuntimeSettings settings = configs.current().settings();
+        RuntimeSettings.Feedback feedback = settings.feedback();
+        if (player.isOnline() && feedback.chat()) {
             messages.send(player, "rankup.success", placeholders);
         }
-        if (player.isOnline() && configs.current().config().getBoolean("feedback.title", true)) {
+        if (player.isOnline() && feedback.title()) {
             player.showTitle(Title.title(
                     messages.component("rankup.title", placeholders),
                     messages.component("rankup.subtitle", placeholders),
                     Title.Times.times(Duration.ofMillis(350), Duration.ofSeconds(3), Duration.ofMillis(600))
             ));
         }
-        if (player.isOnline() && configs.current().config().getBoolean("feedback.sound", true)) {
-            playConfiguredSound(player, "sounds.rankup");
+        if (player.isOnline() && feedback.sound()) {
+            playConfiguredSound(player, settings.rankupSound());
         }
-        if (rank.announce()
-                && configs.current().config().getBoolean("broadcast.enabled", true)
-                && configs.current().config().getBoolean("feedback.broadcast", true)) {
+        if (rank.announce() && settings.broadcastEnabled() && feedback.broadcast()) {
             Bukkit.getServer().sendMessage(messages.component("rankup.broadcast", placeholders));
         }
         if (discord.connected()) {
-            String channel = configs.current().config().getString("discord.game-channel", "global");
-            String message = TextFormatter.replaceRaw(configs.current().config().getString("discord.message", ""), placeholders);
-            discord.send(channel, configs.formatter().plain(configs.formatter().component(message)));
+            String message = TextFormatter.replaceRaw(settings.discordMessage(), placeholders);
+            discord.send(settings.discordChannel(), configs.formatter().plain(configs.formatter().component(message)));
         }
     }
 
-    private void playConfiguredSound(Player player, String path) {
-        String sound = configs.current().config().getString(path + ".sound", "");
-        if (sound.isBlank()) {
+    private void playConfiguredSound(Player player, RuntimeSettings.SoundDescriptor descriptor) {
+        if (descriptor.sound().isBlank()) {
             return;
         }
-        float volume = (float) configs.current().config().getDouble(path + ".volume", 1.0);
-        float pitch = (float) configs.current().config().getDouble(path + ".pitch", 1.0);
+        String sound = descriptor.sound();
         try {
-            player.playSound(player.getLocation(), sound.toLowerCase().contains(":") ? sound.toLowerCase() : "minecraft:" + sound.toLowerCase(), volume, pitch);
+            player.playSound(player.getLocation(), sound.toLowerCase().contains(":") ? sound.toLowerCase()
+                    : "minecraft:" + sound.toLowerCase(), descriptor.volume(), descriptor.pitch());
         } catch (RuntimeException exception) {
-            plugin.getLogger().warning("Invalid configured sound " + sound + " at " + path);
+            plugin.getLogger().warning("Invalid configured sound " + sound);
         }
     }
 

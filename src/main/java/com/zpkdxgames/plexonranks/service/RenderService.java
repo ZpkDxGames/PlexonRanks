@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,6 +31,17 @@ public final class RenderService {
 
     public List<RequirementProgress> progress(Player player, Rank rank) {
         return requirements.evaluate(player, rank.requirements());
+    }
+
+    public List<RequirementProgress> staticProgress(Rank rank, boolean completed) {
+        if (rank.requirements().isEmpty()) {
+            return List.of();
+        }
+        List<RequirementProgress> values = new ArrayList<>(rank.requirements().size());
+        for (RequirementDefinition definition : rank.requirements()) {
+            values.add(staticProgress(definition, completed));
+        }
+        return List.copyOf(values);
     }
 
     public List<String> requirementLines(List<RequirementProgress> progresses) {
@@ -138,6 +150,48 @@ public final class RenderService {
         return complete + remaining;
     }
 
+    private RequirementProgress staticProgress(RequirementDefinition definition, boolean completed) {
+        double required = definition.amount();
+        Map<String, String> extra = new LinkedHashMap<>();
+        switch (definition.type()) {
+            case PLAYTIME -> {
+                required = toMinutes(definition.amount(), definition.string("unit", "MINUTES"));
+                extra.put("current_formatted", NumberFormats.durationMinutes(completed ? required : 0));
+                extra.put("required_formatted", NumberFormats.durationMinutes(required));
+            }
+            case PERMISSION -> {
+                required = 1;
+                extra.put("permission", definition.string("permission", ""));
+            }
+            case PLACEHOLDER -> {
+                String requiredValue = definition.string("value", NumberFormats.number(definition.amount()));
+                extra.put("placeholder", definition.string("placeholder", ""));
+                extra.put("current", completed ? requiredValue : "-");
+                extra.put("required", requiredValue);
+                extra.put("missing", "");
+                extra.put("percent", completed ? "100" : "0");
+                extra.put("completed", String.valueOf(completed));
+                return new RequirementProgress(definition, completed ? 1 : 0, 1,
+                        completed, completed ? 1.0 : 0.0, extra);
+            }
+            case ITEM -> {
+                required = Math.max(1, definition.integer("amount", (int) Math.ceil(definition.amount())));
+                extra.put("material", pretty(definition.string("material", "Item")));
+            }
+            default -> {
+            }
+        }
+
+        double current = completed ? required : 0;
+        double normalized = completed ? 1.0 : 0.0;
+        extra.put("current", NumberFormats.number(current));
+        extra.put("required", NumberFormats.number(required));
+        extra.put("missing", NumberFormats.number(Math.max(0, required - current)));
+        extra.put("percent", NumberFormats.number(normalized * 100.0));
+        extra.put("completed", String.valueOf(completed));
+        return new RequirementProgress(definition, current, required, completed, normalized, extra);
+    }
+
     private void setRequirementSummary(Map<String, String> values, Rank rank) {
         values.put("money", required(rank, RequirementType.MONEY));
         values.put("xp", required(rank, RequirementType.XP_LEVELS));
@@ -151,5 +205,19 @@ public final class RenderService {
                 .map(RequirementDefinition::amount)
                 .map(NumberFormats::number)
                 .orElse("0");
+    }
+
+    private static double toMinutes(double amount, String unit) {
+        return switch (unit.toUpperCase(Locale.ROOT)) {
+            case "SECONDS" -> amount / 60.0;
+            case "HOURS" -> amount * 60.0;
+            case "DAYS" -> amount * 1440.0;
+            default -> amount;
+        };
+    }
+
+    private static String pretty(String value) {
+        String lower = value.toLowerCase(Locale.ROOT).replace('_', ' ').trim();
+        return lower.isEmpty() ? "Item" : Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
 }

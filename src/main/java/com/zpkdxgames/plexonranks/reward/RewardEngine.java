@@ -34,6 +34,8 @@ public final class RewardEngine {
     private final JavaPlugin plugin;
     private final LuckPermsHook luckPerms;
     private final Map<RewardType, RewardHandler> handlers = new EnumMap<>(RewardType.class);
+    private volatile RankRegistry persistentPlanRegistry;
+    private volatile Map<GrantPlanKey, PersistentGrantPlan> persistentGrantPlans = Map.of();
 
     public RewardEngine(JavaPlugin plugin, VaultHook vault, LuckPermsHook luckPerms, Supplier<TextFormatter> formatter) {
         this.plugin = plugin;
@@ -62,37 +64,57 @@ public final class RewardEngine {
         return chain;
     }
 
-    public CompletableFuture<Void> reconcile(UUID uuid, Rank current, RankRegistry registry, boolean cumulative) {
-        Set<String> permissions = new LinkedHashSet<>();
-        List<RewardDefinition> groups = new ArrayList<>();
+    public synchronized void compilePersistentGrantPlans(RankRegistry registry) {
+        Map<GrantPlanKey, PersistentGrantPlan> compiled = new LinkedHashMap<>();
+        Set<String> cumulativePermissions = new LinkedHashSet<>();
+        List<LuckPermsHook.GroupGrant> cumulativeGroups = new ArrayList<>();
+
         for (Rank rank : registry.ordered()) {
-            if (!cumulative && !rank.id().equals(current.id())) {
-                continue;
-            }
-            if (rank.order() > current.order()) {
-                break;
-            }
-            for (RewardDefinition reward : rank.rewards()) {
-                if (!reward.persistent()) {
-                    continue;
-                }
-                if (reward.type() == RewardType.PERMISSION) {
-                    permissions.addAll(reward.permissions());
-                } else if (reward.type() == RewardType.LUCKPERMS_GROUP) {
-                    groups.add(reward);
-                }
-            }
+            PersistentGrantPlan currentOnly = persistentPlanFor(rank.rewards());
+            compiled.put(new GrantPlanKey(rank.id(), false), currentOnly);
+
+            cumulativePermissions.addAll(currentOnly.permissions());
+            cumulativeGroups.addAll(currentOnly.groups());
+            compiled.put(new GrantPlanKey(rank.id(), true), new PersistentGrantPlan(
+                    Set.copyOf(cumulativePermissions),
+                    List.copyOf(cumulativeGroups)
+            ));
         }
-        CompletableFuture<Void> chain = luckPerms.addPermissions(uuid, permissions);
-        for (RewardDefinition group : groups) {
-            chain = chain.thenCompose(ignored -> luckPerms.addGroup(uuid,
-                    group.string("group", ""), group.string("mode", "ADD")));
+
+        persistentGrantPlans = Map.copyOf(compiled);
+        persistentPlanRegistry = registry;
+    }
+
+    public CompletableFuture<Void> reconcile(UUID uuid, Rank current, RankRegistry registry, boolean cumulative) {
+        if (persistentPlanRegistry != registry) {
+            compilePersistentGrantPlans(registry);
         }
-        return chain;
+        PersistentGrantPlan plan = persistentGrantPlans.getOrDefault(
+                new GrantPlanKey(current.id(), cumulative), PersistentGrantPlan.EMPTY);
+        return luckPerms.applyPersistentGrants(uuid, plan.permissions(), plan.groups());
     }
 
     public static List<String> display(Rank rank) {
         return rank.rewards().stream().flatMap(reward -> reward.display().stream()).toList();
+    }
+
+    private PersistentGrantPlan persistentPlanFor(List<RewardDefinition> rewards) {
+        Set<String> permissions = new LinkedHashSet<>();
+        List<LuckPermsHook.GroupGrant> groups = new ArrayList<>();
+        for (RewardDefinition reward : rewards) {
+            if (!reward.persistent()) {
+                continue;
+            }
+            if (reward.type() == RewardType.PERMISSION) {
+                permissions.addAll(reward.permissions());
+            } else if (reward.type() == RewardType.LUCKPERMS_GROUP) {
+                groups.add(new LuckPermsHook.GroupGrant(
+                        reward.string("group", ""),
+                        reward.string("mode", "ADD")
+                ));
+            }
+        }
+        return new PersistentGrantPlan(Set.copyOf(permissions), List.copyOf(groups));
     }
 
     private CompletableFuture<Void> onMain(Supplier<CompletableFuture<Void>> action) {
@@ -114,6 +136,13 @@ public final class RewardEngine {
             }
         });
         return result;
+    }
+
+    private record GrantPlanKey(String rankId, boolean cumulative) {
+    }
+
+    private record PersistentGrantPlan(Set<String> permissions, List<LuckPermsHook.GroupGrant> groups) {
+        private static final PersistentGrantPlan EMPTY = new PersistentGrantPlan(Set.of(), List.of());
     }
 
     private record CommandHandler(JavaPlugin plugin) implements RewardHandler {

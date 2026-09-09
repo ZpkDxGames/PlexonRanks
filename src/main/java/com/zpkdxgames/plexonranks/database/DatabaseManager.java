@@ -37,6 +37,10 @@ public final class DatabaseManager implements AutoCloseable {
     private Connection connection;
 
     public DatabaseManager(org.bukkit.plugin.java.JavaPlugin plugin, String configuredFile) {
+        this(plugin, configuredFile, DEFAULT_QUEUE_CAPACITY);
+    }
+
+    public DatabaseManager(org.bukkit.plugin.java.JavaPlugin plugin, String configuredFile, int queueCapacity) {
         this.logger = plugin.getLogger();
         Path dataFolder = plugin.getDataFolder().toPath().toAbsolutePath().normalize();
         Path resolved = dataFolder.resolve(configuredFile).normalize();
@@ -44,8 +48,8 @@ public final class DatabaseManager implements AutoCloseable {
             throw new IllegalArgumentException("SQLite file must remain inside the PlexonRanks data folder");
         }
         this.databasePath = resolved;
-        this.queueCapacity = DEFAULT_QUEUE_CAPACITY;
-        this.executor = createExecutor("PlexonRanks-Database", queueCapacity);
+        this.queueCapacity = Math.max(8, queueCapacity);
+        this.executor = createExecutor("PlexonRanks-Database", this.queueCapacity);
     }
 
     public DatabaseManager(Logger logger, Path databasePath) {
@@ -325,7 +329,9 @@ public final class DatabaseManager implements AutoCloseable {
                 int unfinished = executor.getQueue().size();
                 logger.warning("Database worker did not drain within 5s; cancelling " + unfinished + " queued operation(s).");
                 executor.shutdownNow();
-                executor.awaitTermination(2, TimeUnit.SECONDS);
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    logger.warning("Database worker still active after forced shutdown; closing SQLite connection defensively.");
+                }
             }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();

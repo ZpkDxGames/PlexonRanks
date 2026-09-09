@@ -88,9 +88,11 @@ public final class PlexonRanksPlugin extends JavaPlugin {
 
             RequirementEngine requirements = new RequirementEngine(vault, placeholders);
             RewardEngine rewards = new RewardEngine(this, vault, luckPerms, configs::formatter);
+            rewards.compilePersistentGrantPlans(configs.current().registry());
             MessageService messages = new MessageService(configs);
             ranks = new RankService(this, configs, database, rewards);
             configs.onReload(() -> {
+                rewards.compilePersistentGrantPlans(configs.current().registry());
                 ranks.repairCachedRanks();
                 if (expansion != null) {
                     expansion.clearCaches();

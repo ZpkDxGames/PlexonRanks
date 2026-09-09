@@ -9,13 +9,12 @@ class CoreBridgeContractTest {
     @Test
     void exposesStableModuleIdentityAndSupportedRange() {
         assertEquals("ranks", CoreBridge.MODULE_ID);
-        assertEquals(">=1.0 <2.0", CoreBridge.SUPPORTED_API_RANGE);
+        assertEquals(">=1.0 <3.0", CoreBridge.SUPPORTED_API_RANGE);
     }
 
     @Test
     void standaloneBridgeDoesNotPretendCoreIsAvailable() {
         CoreBridge bridge = new StandaloneCoreBridge(false, "-", "-", "PlexonCore is not installed");
-
         assertFalse(bridge.installed());
         assertFalse(bridge.available());
         assertFalse(bridge.compatible());
@@ -27,7 +26,6 @@ class CoreBridgeContractTest {
     @Test
     void installedButUnavailableCoreStillFallsBackSafely() {
         CoreBridge bridge = new StandaloneCoreBridge(true, "1.0.0", "-", "PlexonCore is disabled");
-
         assertFalse(bridge.available());
         assertEquals("STANDALONE", bridge.mode());
         assertEquals("UNAVAILABLE", bridge.registrationState());

@@ -67,7 +67,7 @@ public final class RewardEngine {
     public synchronized void compilePersistentGrantPlans(RankRegistry registry) {
         Map<GrantPlanKey, PersistentGrantPlan> compiled = new LinkedHashMap<>();
         Set<String> cumulativePermissions = new LinkedHashSet<>();
-        List<GroupOperation> cumulativeGroups = new ArrayList<>();
+        List<LuckPermsHook.GroupGrant> cumulativeGroups = new ArrayList<>();
 
         for (Rank rank : registry.ordered()) {
             PersistentGrantPlan currentOnly = persistentPlanFor(rank.rewards());
@@ -91,11 +91,7 @@ public final class RewardEngine {
         }
         PersistentGrantPlan plan = persistentGrantPlans.getOrDefault(
                 new GrantPlanKey(current.id(), cumulative), PersistentGrantPlan.EMPTY);
-        CompletableFuture<Void> chain = luckPerms.addPermissions(uuid, plan.permissions());
-        for (GroupOperation group : plan.groups()) {
-            chain = chain.thenCompose(ignored -> luckPerms.addGroup(uuid, group.group(), group.mode()));
-        }
-        return chain;
+        return luckPerms.applyPersistentGrants(uuid, plan.permissions(), plan.groups());
     }
 
     public static List<String> display(Rank rank) {
@@ -104,7 +100,7 @@ public final class RewardEngine {
 
     private PersistentGrantPlan persistentPlanFor(List<RewardDefinition> rewards) {
         Set<String> permissions = new LinkedHashSet<>();
-        List<GroupOperation> groups = new ArrayList<>();
+        List<LuckPermsHook.GroupGrant> groups = new ArrayList<>();
         for (RewardDefinition reward : rewards) {
             if (!reward.persistent()) {
                 continue;
@@ -112,7 +108,10 @@ public final class RewardEngine {
             if (reward.type() == RewardType.PERMISSION) {
                 permissions.addAll(reward.permissions());
             } else if (reward.type() == RewardType.LUCKPERMS_GROUP) {
-                groups.add(new GroupOperation(reward.string("group", ""), reward.string("mode", "ADD")));
+                groups.add(new LuckPermsHook.GroupGrant(
+                        reward.string("group", ""),
+                        reward.string("mode", "ADD")
+                ));
             }
         }
         return new PersistentGrantPlan(Set.copyOf(permissions), List.copyOf(groups));
@@ -142,10 +141,7 @@ public final class RewardEngine {
     private record GrantPlanKey(String rankId, boolean cumulative) {
     }
 
-    private record GroupOperation(String group, String mode) {
-    }
-
-    private record PersistentGrantPlan(Set<String> permissions, List<GroupOperation> groups) {
+    private record PersistentGrantPlan(Set<String> permissions, List<LuckPermsHook.GroupGrant> groups) {
         private static final PersistentGrantPlan EMPTY = new PersistentGrantPlan(Set.of(), List.of());
     }
 

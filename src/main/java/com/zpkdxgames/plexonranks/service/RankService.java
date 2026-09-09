@@ -24,6 +24,7 @@ public final class RankService {
     private final RewardEngine rewards;
     private final Map<UUID, PlayerRankData> cache = new ConcurrentHashMap<>();
     private final Map<UUID, CompletableFuture<PlayerRankData>> loading = new ConcurrentHashMap<>();
+    private final Map<UUID, CompletableFuture<Void>> reconciling = new ConcurrentHashMap<>();
 
     public RankService(JavaPlugin plugin, ConfigManager configs, DatabaseManager database, RewardEngine rewards) {
         this.plugin = plugin;
@@ -67,6 +68,18 @@ public final class RankService {
         return cache.containsKey(uuid);
     }
 
+    public int loadedCount() {
+        return cache.size();
+    }
+
+    public int loadingCount() {
+        return loading.size();
+    }
+
+    public int reconcilingCount() {
+        return reconciling.size();
+    }
+
     public Optional<PlayerRankData> data(UUID uuid) {
         return Optional.ofNullable(cache.get(uuid));
     }
@@ -99,24 +112,41 @@ public final class RankService {
     }
 
     public CompletableFuture<Void> reconcile(UUID uuid) {
-        return load(uuid).thenCompose(data -> {
+        CompletableFuture<Void> promise = new CompletableFuture<>();
+        CompletableFuture<Void> existing = reconciling.putIfAbsent(uuid, promise);
+        if (existing != null) {
+            return existing;
+        }
+
+        load(uuid).thenCompose(data -> {
             Rank current = configs.current().registry().byId(data.rankId()).orElse(configs.current().registry().defaultRank());
-            boolean cumulative = configs.current().config().getBoolean("permissions.cumulative", true);
-            return rewards.reconcile(uuid, current, configs.current().registry(), cumulative);
+            return rewards.reconcile(uuid, current, configs.current().registry(),
+                    configs.current().settings().cumulativePermissions());
+        }).whenComplete((ignored, error) -> {
+            try {
+                if (error == null) {
+                    promise.complete(null);
+                } else {
+                    promise.completeExceptionally(error);
+                }
+            } finally {
+                reconciling.remove(uuid, promise);
+            }
         });
+        return promise;
     }
 
     public void unloadLater(Player player) {
         UUID uuid = player.getUniqueId();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (Bukkit.getPlayer(uuid) == null && !loading.containsKey(uuid)) {
+            if (Bukkit.getPlayer(uuid) == null && !loading.containsKey(uuid) && !reconciling.containsKey(uuid)) {
                 cache.remove(uuid);
             }
         }, 40L);
     }
 
     public void repairCachedRanks() {
-        String fallback = configs.current().config().getString("join.missing-rank-fallback", "FAIL");
+        String fallback = configs.current().settings().missingRankFallback();
         Rank defaultRank = configs.current().registry().defaultRank();
         for (PlayerRankData data : List.copyOf(cache.values())) {
             boolean available = configs.current().registry().byId(data.rankId()).filter(Rank::enabled).isPresent();
@@ -136,7 +166,7 @@ public final class RankService {
         if (configs.current().registry().byId(data.rankId()).filter(Rank::enabled).isPresent()) {
             return CompletableFuture.completedFuture(data);
         }
-        String behavior = configs.current().config().getString("join.missing-rank-fallback", "FAIL");
+        String behavior = configs.current().settings().missingRankFallback();
         plugin.getLogger().warning("Player " + data.uuid() + " references missing rank '" + data.rankId() + "'. Fallback: " + behavior);
         if ("FIRST".equalsIgnoreCase(behavior)) {
             return database.forceSetRank(data.uuid(), configs.current().registry().defaultRank().id());

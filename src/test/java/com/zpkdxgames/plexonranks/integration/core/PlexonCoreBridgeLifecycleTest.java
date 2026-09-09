@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlexonCoreBridgeLifecycleTest {
     @Test
-    void compatibleCorePublishesLifecycleAndUnregistersCleanly() {
-        Plugin plugin = plugin("PlexonRanks", "2.1.0");
-        CoreVersion version = CoreVersion.of(1, 0, "1.0.0");
+    void compatibleCore2PublishesLifecycleAndUnregistersCleanly() {
+        Plugin plugin = plugin("PlexonRanks", "2.2.1");
+        CoreVersion version = CoreVersion.of(2, 0, "2.0.4");
         ModuleRegistry modules = new ModuleRegistry(version);
         IntegrationRegistry integrations = integrations();
         integrations.publish("VAULT", "Vault", "1.7", IntegrationState.READY, Set.of("economy"), "Ready");
@@ -55,9 +55,9 @@ class PlexonCoreBridgeLifecycleTest {
     }
 
     @Test
-    void incompatibleCoreNeverTransitionsToReady() {
-        Plugin plugin = plugin("PlexonRanks", "2.1.0");
-        CoreVersion version = CoreVersion.of(2, 0, "2.0.0");
+    void incompatibleCore3NeverTransitionsToReady() {
+        Plugin plugin = plugin("PlexonRanks", "2.2.1");
+        CoreVersion version = CoreVersion.of(3, 0, "3.0.0");
         ModuleRegistry modules = new ModuleRegistry(version);
         IntegrationRegistry integrations = integrations();
         PlexonCoreBridge bridge = new PlexonCoreBridge(plugin, api(version, modules, integrations));
@@ -78,9 +78,9 @@ class PlexonCoreBridgeLifecycleTest {
 
     @Test
     void duplicateRegistrationOwnedByAnotherPluginIsNotReplacedOrRemoved() {
-        Plugin plugin = plugin("PlexonRanks", "2.1.0");
+        Plugin plugin = plugin("PlexonRanks", "2.2.1");
         Plugin other = plugin("OtherRanks", "9.9.9");
-        CoreVersion version = CoreVersion.of(1, 0, "1.0.0");
+        CoreVersion version = CoreVersion.of(2, 0, "2.0.4");
         ModuleRegistry modules = new ModuleRegistry(version);
         IntegrationRegistry integrations = integrations();
         ModuleDescriptor existing = new ModuleDescriptor(

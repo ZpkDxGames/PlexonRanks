@@ -12,6 +12,8 @@ import java.util.Optional;
 public final class RankRegistry {
     private final Map<String, Rank> byId;
     private final List<Rank> ordered;
+    private final List<Rank> visible;
+    private final Map<String, Integer> orderedPositions;
     private final Rank defaultRank;
 
     public RankRegistry(Collection<Rank> ranks) {
@@ -29,13 +31,23 @@ public final class RankRegistry {
                 throw new IllegalArgumentException("Duplicate rank ID: " + rank.id());
             }
         }
+        Map<String, Integer> positions = new LinkedHashMap<>();
+        for (int i = 0; i < enabled.size(); i++) {
+            positions.put(enabled.get(i).id().toLowerCase(Locale.ROOT), i);
+        }
         this.byId = Map.copyOf(index);
         this.ordered = List.copyOf(enabled);
+        this.visible = enabled.stream().filter(Rank::visible).toList();
+        this.orderedPositions = Map.copyOf(positions);
         this.defaultRank = enabled.stream().filter(Rank::defaultRank).findFirst().orElse(enabled.getFirst());
     }
 
     public List<Rank> ordered() {
         return ordered;
+    }
+
+    public List<Rank> visible() {
+        return visible;
     }
 
     public Collection<Rank> all() {
@@ -63,7 +75,7 @@ public final class RankRegistry {
     }
 
     public Optional<Rank> next(Rank current) {
-        int index = ordered.indexOf(current);
+        int index = position(current);
         if (index < 0) {
             return Optional.of(defaultRank);
         }
@@ -77,7 +89,7 @@ public final class RankRegistry {
     }
 
     public Optional<Rank> nextAccessible(Rank current, java.util.function.Predicate<String> permissionCheck) {
-        int index = ordered.indexOf(current);
+        int index = position(current);
         if (index < 0) {
             return Optional.of(defaultRank);
         }
@@ -91,7 +103,7 @@ public final class RankRegistry {
     }
 
     public Optional<Rank> shift(Rank current, int amount) {
-        int index = ordered.indexOf(current);
+        int index = position(current);
         if (index < 0) {
             return Optional.of(defaultRank);
         }
@@ -100,7 +112,10 @@ public final class RankRegistry {
     }
 
     public int position(Rank rank) {
-        return ordered.indexOf(rank);
+        if (rank == null) {
+            return -1;
+        }
+        return orderedPositions.getOrDefault(rank.id().toLowerCase(Locale.ROOT), -1);
     }
 
     public List<String> ids() {

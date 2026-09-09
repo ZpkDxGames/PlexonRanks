@@ -91,6 +91,9 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             ranks = new RankService(this, configs, database, rewards);
             configs.onReload(() -> {
                 ranks.repairCachedRanks();
+                if (expansion != null) {
+                    expansion.clearCaches();
+                }
                 publishCoreHealth();
             });
             RenderService render = new RenderService(configs, requirements);
@@ -116,7 +119,11 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             Bukkit.getPluginManager().registerEvents(rankListMenu, this);
             Bukkit.getPluginManager().registerEvents(chatInput, this);
             Bukkit.getPluginManager().registerEvents(adminMenu, this);
-            Bukkit.getPluginManager().registerEvents(new PlayerDataListener(this, configs, ranks), this);
+            Bukkit.getPluginManager().registerEvents(new PlayerDataListener(this, configs, ranks, rankup, uuid -> {
+                if (expansion != null) {
+                    expansion.invalidate(uuid);
+                }
+            }), this);
 
             api = new PlexonRanksApiImpl(configs, ranks, requirements);
             Bukkit.getServicesManager().register(PlexonRanksAPI.class, api, this, ServicePriority.Normal);
@@ -152,6 +159,7 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             rankListMenu = null;
         }
         if (expansion != null) {
+            expansion.clearCaches();
             expansion.unregister();
             expansion = null;
         }

@@ -85,4 +85,24 @@ class DatabaseManagerTest {
             }
         }
     }
+
+    @Test
+    void serializedWorkerUsesBoundedQueueAndReportsMetrics() throws Exception {
+        Path databaseFile = temp.resolve("bounded.db");
+        DatabaseManager database = new DatabaseManager(Logger.getAnonymousLogger(), databaseFile, 8);
+        database.initialize();
+
+        assertEquals(8, database.queueCapacity());
+        assertEquals(0, database.queueDepth());
+        database.loadOrCreate(UUID.randomUUID(), "unranked").get(5, TimeUnit.SECONDS);
+        database.loadOrCreate(UUID.randomUUID(), "unranked").get(5, TimeUnit.SECONDS);
+
+        assertEquals(2, database.submittedCount());
+        assertEquals(2, database.completedCount());
+        assertEquals(0, database.failureCount());
+        assertTrue(database.queueHighWater() >= 0);
+        assertTrue(database.queueHighWater() <= database.queueCapacity());
+        assertEquals(0, database.queueDepth());
+        database.close();
+    }
 }

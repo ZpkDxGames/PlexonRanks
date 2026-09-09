@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class PlexonRanksExpansion extends PlaceholderExpansion {
     private static final long DEFAULT_CACHE_TICKS = 4L;
-    private static final long MAX_CACHE_TICKS = 20L;
     private static final long RECURSION_WARNING_INTERVAL_NANOS = 30_000_000_000L;
 
     private final JavaPlugin plugin;
@@ -203,9 +202,7 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
         if (cacheGeneration == generation) return;
         synchronized (this) {
             if (cacheGeneration == generation) return;
-            long configuredTicks = generation.config().getLong("performance.placeholder-cache-ticks", DEFAULT_CACHE_TICKS);
-            long ticks = Math.max(1L, Math.min(MAX_CACHE_TICKS, configuredTicks));
-            snapshotTtlNanos = ticks * 50_000_000L;
+            snapshotTtlNanos = generation.settings().placeholderCacheTicks() * 50_000_000L;
             displaySnapshots.clear();
             formattedCache.clear();
             cacheGeneration = generation;

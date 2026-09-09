@@ -18,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -120,6 +119,20 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
                 activeRequests.remove();
             }
         }
+    }
+
+    public void invalidate(UUID playerId) {
+        displaySnapshots.remove(playerId);
+    }
+
+    public void clearCaches() {
+        displaySnapshots.clear();
+        formattedCache.clear();
+        cacheGeneration = null;
+    }
+
+    public int cachedPlayers() {
+        return displaySnapshots.size();
     }
 
     private String progressPercent(Player player, Rank current, ConfigSnapshot generation) {

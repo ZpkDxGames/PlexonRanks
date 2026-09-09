@@ -1,6 +1,7 @@
 package com.zpkdxgames.plexonranks.service;
 
 import com.zpkdxgames.plexonranks.config.ConfigManager;
+import com.zpkdxgames.plexonranks.config.RuntimeSettings;
 import com.zpkdxgames.plexonranks.database.DatabaseManager;
 import com.zpkdxgames.plexonranks.event.PlexonRankChangeEvent;
 import com.zpkdxgames.plexonranks.event.PlexonRankPreRankupEvent;
@@ -69,9 +70,9 @@ public final class RankupService {
             return;
         }
 
+        RuntimeSettings settings = configs.current().settings();
         long now = System.nanoTime();
-        long cooldownMillis = Math.max(0, configs.current().config().getLong("rankup.cooldown-ms", 750));
-        long cooldownNanos = TimeUnit.MILLISECONDS.toNanos(cooldownMillis);
+        long cooldownNanos = TimeUnit.MILLISECONDS.toNanos(settings.rankupCooldownMillis());
         long elapsed = now - lastAttemptNanos.getOrDefault(uuid, now - cooldownNanos);
         long remainingNanos = cooldownNanos - elapsed;
         if (remainingNanos > 0) {
@@ -97,7 +98,7 @@ public final class RankupService {
         if (precheck.stream().anyMatch(value -> !value.complete())) {
             messages.send(player, "rankup.requirements-not-met",
                     render.placeholders(player, current, target, precheck, RankState.NEXT));
-            playConfiguredSound(player, "sounds.denied");
+            playConfiguredSound(player, settings.deniedSound());
             processing.remove(uuid);
             return;
         }
@@ -114,7 +115,7 @@ public final class RankupService {
         if (!plan.complete()) {
             messages.send(player, "rankup.requirements-not-met",
                     render.placeholders(player, current, target, plan.progress(), RankState.NEXT));
-            playConfiguredSound(player, "sounds.denied");
+            playConfiguredSound(player, settings.deniedSound());
             processing.remove(uuid);
             return;
         }
@@ -181,42 +182,40 @@ public final class RankupService {
     }
 
     private void feedback(Player player, Rank rank, Map<String, String> placeholders) {
-        if (player.isOnline() && configs.current().config().getBoolean("feedback.chat", true)) {
+        RuntimeSettings settings = configs.current().settings();
+        RuntimeSettings.Feedback feedback = settings.feedback();
+        if (player.isOnline() && feedback.chat()) {
             messages.send(player, "rankup.success", placeholders);
         }
-        if (player.isOnline() && configs.current().config().getBoolean("feedback.title", true)) {
+        if (player.isOnline() && feedback.title()) {
             player.showTitle(Title.title(
                     messages.component("rankup.title", placeholders),
                     messages.component("rankup.subtitle", placeholders),
                     Title.Times.times(Duration.ofMillis(350), Duration.ofSeconds(3), Duration.ofMillis(600))
             ));
         }
-        if (player.isOnline() && configs.current().config().getBoolean("feedback.sound", true)) {
-            playConfiguredSound(player, "sounds.rankup");
+        if (player.isOnline() && feedback.sound()) {
+            playConfiguredSound(player, settings.rankupSound());
         }
-        if (rank.announce()
-                && configs.current().config().getBoolean("broadcast.enabled", true)
-                && configs.current().config().getBoolean("feedback.broadcast", true)) {
+        if (rank.announce() && settings.broadcastEnabled() && feedback.broadcast()) {
             Bukkit.getServer().sendMessage(messages.component("rankup.broadcast", placeholders));
         }
         if (discord.connected()) {
-            String channel = configs.current().config().getString("discord.game-channel", "global");
-            String message = TextFormatter.replaceRaw(configs.current().config().getString("discord.message", ""), placeholders);
-            discord.send(channel, configs.formatter().plain(configs.formatter().component(message)));
+            String message = TextFormatter.replaceRaw(settings.discordMessage(), placeholders);
+            discord.send(settings.discordChannel(), configs.formatter().plain(configs.formatter().component(message)));
         }
     }
 
-    private void playConfiguredSound(Player player, String path) {
-        String sound = configs.current().config().getString(path + ".sound", "");
-        if (sound.isBlank()) {
+    private void playConfiguredSound(Player player, RuntimeSettings.SoundDescriptor descriptor) {
+        if (descriptor.sound().isBlank()) {
             return;
         }
-        float volume = (float) configs.current().config().getDouble(path + ".volume", 1.0);
-        float pitch = (float) configs.current().config().getDouble(path + ".pitch", 1.0);
+        String sound = descriptor.sound();
         try {
-            player.playSound(player.getLocation(), sound.toLowerCase().contains(":") ? sound.toLowerCase() : "minecraft:" + sound.toLowerCase(), volume, pitch);
+            player.playSound(player.getLocation(), sound.toLowerCase().contains(":") ? sound.toLowerCase()
+                    : "minecraft:" + sound.toLowerCase(), descriptor.volume(), descriptor.pitch());
         } catch (RuntimeException exception) {
-            plugin.getLogger().warning("Invalid configured sound " + sound + " at " + path);
+            plugin.getLogger().warning("Invalid configured sound " + sound);
         }
     }
 

@@ -8,6 +8,7 @@ import com.zpkdxgames.plexonranks.command.RanksCommand;
 import com.zpkdxgames.plexonranks.command.RankupCommand;
 import com.zpkdxgames.plexonranks.config.ConfigManager;
 import com.zpkdxgames.plexonranks.config.RankConfigEditor;
+import com.zpkdxgames.plexonranks.config.RuntimeSettings;
 import com.zpkdxgames.plexonranks.database.DatabaseManager;
 import com.zpkdxgames.plexonranks.integration.DiscordSrvHook;
 import com.zpkdxgames.plexonranks.integration.LuckPermsHook;
@@ -59,8 +60,9 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             configs = new ConfigManager(this);
             configs.ensureDefaults();
             configs.loadInitial();
+            RuntimeSettings settings = configs.current().settings();
 
-            database = new DatabaseManager(this, configs.current().config().getString("storage.sqlite.file", "database.db"));
+            database = new DatabaseManager(this, settings.databaseFile(), settings.databaseQueueCapacity());
             database.initialize();
 
             vault = new VaultHook(this);
@@ -70,7 +72,7 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             if (!vault.connected()) throw new IllegalStateException("Vault is loaded, but no economy provider is registered.");
             if (!luckPerms.connected()) throw new IllegalStateException("LuckPerms API service is unavailable.");
 
-            boolean placeholderEnabled = configs.current().config().getBoolean("integrations.placeholderapi", true);
+            boolean placeholderEnabled = settings.placeholderApiEnabled();
             placeholders = new PlaceholderHook(this, placeholderEnabled);
             if (placeholderEnabled) {
                 auditCoreProviderHint("PLACEHOLDERAPI", placeholders.connected());
@@ -82,8 +84,7 @@ public final class PlexonRanksPlugin extends JavaPlugin {
                 throw new IllegalStateException("PlaceholderAPI is required because PLACEHOLDER requirements are configured.");
             }
 
-            boolean discordEnabled = configs.current().config().getBoolean("integrations.discordsrv", false);
-            discord = new DiscordSrvHook(this, discordEnabled);
+            discord = new DiscordSrvHook(this, settings.discordSrvEnabled());
 
             RequirementEngine requirements = new RequirementEngine(vault, placeholders);
             RewardEngine rewards = new RewardEngine(this, vault, luckPerms, configs::formatter);
@@ -93,6 +94,9 @@ public final class PlexonRanksPlugin extends JavaPlugin {
                 ranks.repairCachedRanks();
                 if (expansion != null) {
                     expansion.clearCaches();
+                }
+                if (rankListMenu != null) {
+                    rankListMenu.reload();
                 }
                 publishCoreHealth();
             });
@@ -199,11 +203,12 @@ public final class PlexonRanksPlugin extends JavaPlugin {
     private void publishCoreHealth() {
         if (core == null) return;
 
+        RuntimeSettings settings = configs.current().settings();
         List<String> degraded = new ArrayList<>();
-        if (configs.current().config().getBoolean("integrations.placeholderapi", true) && !placeholders.connected()) {
+        if (settings.placeholderApiEnabled() && !placeholders.connected()) {
             degraded.add("PlaceholderAPI enabled but unavailable");
         }
-        if (configs.current().config().getBoolean("integrations.discordsrv", false) && !discord.connected()) {
+        if (settings.discordSrvEnabled() && !discord.connected()) {
             degraded.add("DiscordSRV enabled but unavailable");
         }
 
@@ -216,9 +221,10 @@ public final class PlexonRanksPlugin extends JavaPlugin {
     }
 
     private void startupSummary() {
+        RuntimeSettings settings = configs.current().settings();
         getLogger().info("PlexonRanks " + getPluginMeta().getVersion());
         getLogger().info(" • Ranks: " + configs.current().registry().ordered().size());
-        getLogger().info(" • Storage: SQLite");
+        getLogger().info(" • Storage: SQLite (queue " + database.queueCapacity() + ")");
         getLogger().info(" • Vault: " + status(vault.connected()));
         getLogger().info(" • LuckPerms: " + status(luckPerms.connected()));
         getLogger().info(" • PlaceholderAPI: " + status(placeholders.connected()));
@@ -227,8 +233,7 @@ public final class PlexonRanksPlugin extends JavaPlugin {
                 ? core.mode() + " API " + core.apiVersion()
                 : "STANDALONE"));
         getLogger().info(" • Module: " + core.registrationState());
-        getLogger().info(" • MiniMessage: " + (configs.current().config().getBoolean("formatting.minimessage", true)
-                ? "ENABLED" : "DISABLED"));
+        getLogger().info(" • MiniMessage: " + (settings.miniMessage() ? "ENABLED" : "DISABLED"));
     }
 
     private static String status(boolean connected) {

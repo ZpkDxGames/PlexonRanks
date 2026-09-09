@@ -20,10 +20,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 public final class RankListMenu implements Listener {
     private final JavaPlugin plugin;
@@ -31,6 +35,7 @@ public final class RankListMenu implements Listener {
     private final RankService ranks;
     private final RankupService rankup;
     private final RenderService render;
+    private final Set<UUID> activeViewers = new LinkedHashSet<>();
     private BukkitTask refreshTask;
 
     public RankListMenu(JavaPlugin plugin, ConfigManager configs, RankService ranks,
@@ -59,6 +64,7 @@ public final class RankListMenu implements Listener {
         holder.attach(inventory);
         draw(player, holder, inventory, visible, slots);
         player.openInventory(inventory);
+        activeViewers.add(player.getUniqueId());
         ensureRefreshTask();
     }
 
@@ -172,10 +178,19 @@ public final class RankListMenu implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent event) {
-        if (refreshTask != null) Bukkit.getScheduler().runTask(plugin, this::stopRefreshWhenUnused);
+        if (!(event.getInventory().getHolder() instanceof RankListHolder) || !(event.getPlayer() instanceof Player player)) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!(player.getOpenInventory().getTopInventory().getHolder() instanceof RankListHolder)) {
+                activeViewers.remove(player.getUniqueId());
+                stopRefreshWhenUnused();
+            }
+        });
     }
 
     public void stop() {
+        activeViewers.clear();
         if (refreshTask != null) {
             refreshTask.cancel();
             refreshTask = null;
@@ -183,21 +198,29 @@ public final class RankListMenu implements Listener {
     }
 
     private void ensureRefreshTask() {
-        if (!configs.current().menus().getBoolean("rank-list.refresh.enabled", true) || refreshTask != null) return;
+        if (!configs.current().menus().getBoolean("rank-list.refresh.enabled", true) || refreshTask != null
+                || activeViewers.isEmpty()) return;
         long interval = Math.max(20L, configs.current().menus().getLong("rank-list.refresh.interval-ticks", 40L));
         refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            for (Player viewer : Bukkit.getOnlinePlayers()) {
+            for (UUID viewerId : new ArrayList<>(activeViewers)) {
+                Player viewer = Bukkit.getPlayer(viewerId);
+                if (viewer == null || !viewer.isOnline()) {
+                    activeViewers.remove(viewerId);
+                    continue;
+                }
                 Inventory top = viewer.getOpenInventory().getTopInventory();
                 if (top.getHolder() instanceof RankListHolder holder) {
                     draw(viewer, holder, top, visibleRanks(viewer), rankSlots());
+                } else {
+                    activeViewers.remove(viewerId);
                 }
             }
+            stopRefreshWhenUnused();
         }, interval, interval);
     }
 
     private void stopRefreshWhenUnused() {
-        if (refreshTask != null && Bukkit.getOnlinePlayers().stream()
-                .noneMatch(player -> player.getOpenInventory().getTopInventory().getHolder() instanceof RankListHolder)) {
+        if (refreshTask != null && activeViewers.isEmpty()) {
             refreshTask.cancel();
             refreshTask = null;
         }
@@ -209,8 +232,7 @@ public final class RankListMenu implements Listener {
     }
 
     private List<Rank> visibleRanks(Player player) {
-        return configs.current().registry().ordered().stream()
-                .filter(Rank::visible)
+        return configs.current().registry().visible().stream()
                 .filter(rank -> rank.bypassPermission().isBlank() || player.hasPermission(rank.bypassPermission()))
                 .toList();
     }

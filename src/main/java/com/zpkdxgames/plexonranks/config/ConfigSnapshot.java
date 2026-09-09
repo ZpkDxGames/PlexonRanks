@@ -11,6 +11,7 @@ public record ConfigSnapshot(
         YamlConfiguration ranks,
         YamlConfiguration menus,
         YamlConfiguration messages,
+        RuntimeSettings settings,
         RankRegistry registry,
         List<ValidationIssue> validationIssues
 ) {
@@ -19,8 +20,6 @@ public record ConfigSnapshot(
     }
 
     public String storageFingerprint() {
-        return config.getString("storage.type", "SQLITE") + ":"
-                + config.getString("storage.sqlite.file", "database.db");
+        return config.getString("storage.type", "SQLITE") + ":" + settings.databaseFile();
     }
 }
-

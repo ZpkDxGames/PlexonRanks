@@ -1,4 +1,4 @@
-# PlexonRanks 2.0 — core settings
+# PlexonRanks 2.2 — core settings
 schema-version: 2
 
 plugin:
@@ -22,6 +22,13 @@ storage:
   type: SQLITE
   sqlite:
     file: database.db
+
+# Display caches are intentionally short-lived and are never authoritative for /rankup.
+# SQLite remains serialized through one worker, but its queue is explicitly bounded.
+performance:
+  placeholder-cache-ticks: 4
+  database:
+    queue-capacity: 1024
 
 integrations:
   placeholderapi: true

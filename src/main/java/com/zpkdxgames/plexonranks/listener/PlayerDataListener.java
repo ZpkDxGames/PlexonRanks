@@ -37,7 +37,7 @@ public final class PlayerDataListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         ranks.load(player.getUniqueId()).thenCompose(data -> {
-            if (configs.current().config().getBoolean("permissions.reconcile-on-join", true)) {
+            if (configs.current().settings().reconcileOnJoin()) {
                 return ranks.reconcile(player);
             }
             return java.util.concurrent.CompletableFuture.completedFuture(null);

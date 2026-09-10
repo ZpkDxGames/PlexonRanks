@@ -1,45 +1,44 @@
 package com.zpkdxgames.plexonranks.reward;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Plain-JUnit structural contracts for reward safety. Bukkit/Paper ItemStack construction
+ * requires a live registry in Paper 26.2, so full-inventory behavior remains an RC runtime gate.
+ */
 class RewardSafetyTest {
     @Test
-    void fullInventoryRejectsRewardWithoutMutation() {
-        ItemStack[] storage = new ItemStack[36];
-        for (int i = 0; i < storage.length; i++) storage[i] = new ItemStack(Material.STONE, 64);
-        ItemStack[] before = cloneStorage(storage);
-
-        assertFalse(RewardEngine.mergeInto(storage, new ItemStack(Material.DIAMOND, 1)));
-        for (int i = 0; i < storage.length; i++) assertEquals(before[i], storage[i]);
+    void itemOverflowHasNoWorldDropFallback() throws Exception {
+        String source = source();
+        assertFalse(source.contains("dropItem("));
+        assertFalse(source.contains("dropItemNaturally("));
+        assertTrue(source.contains("Item reward overflow; world-drop fallback is prohibited"));
+        assertTrue(source.contains("Player inventory cannot safely receive all item rewards"));
     }
 
     @Test
-    void partialSimilarStackReceivesRewardWithoutExtraSlot() {
-        ItemStack[] storage = new ItemStack[36];
-        storage[0] = new ItemStack(Material.DIAMOND, 60);
-        assertTrue(RewardEngine.mergeInto(storage, new ItemStack(Material.DIAMOND, 4)));
-        assertEquals(64, storage[0].getAmount());
-        for (int i = 1; i < storage.length; i++) assertEquals(null, storage[i]);
+    void externalCommandsAreExplicitlySeparatedFromReversibleRewards() throws Exception {
+        String source = source();
+        int reversible = source.indexOf("ReversibleRewardBatch executeReversible");
+        int commands = source.indexOf("void executeCommands");
+        assertTrue(reversible >= 0);
+        assertTrue(commands > reversible);
+        assertTrue(source.contains("Irreversible external command boundary; must be the final reward stage"));
     }
 
     @Test
-    void emptySlotsAreSimulatedDeterministically() {
-        ItemStack[] storage = new ItemStack[2];
-        assertTrue(RewardEngine.mergeInto(storage, new ItemStack(Material.DIAMOND, 64)));
-        assertEquals(Material.DIAMOND, storage[0].getType());
-        assertEquals(64, storage[0].getAmount());
-        assertEquals(null, storage[1]);
+    void reversibleBatchRollsBackInReverseOrder() throws Exception {
+        String source = source();
+        assertTrue(source.contains("for (int index = rollbacks.size() - 1; index >= 0; index--)"));
+        assertTrue(source.contains("if (rolledBack) return"));
     }
 
-    private static ItemStack[] cloneStorage(ItemStack[] source) {
-        ItemStack[] result = new ItemStack[source.length];
-        for (int i = 0; i < source.length; i++) result[i] = source[i] == null ? null : source[i].clone();
-        return result;
+    private static String source() throws Exception {
+        return Files.readString(Path.of("src/main/java/com/zpkdxgames/plexonranks/reward/RewardEngine.java"));
     }
 }

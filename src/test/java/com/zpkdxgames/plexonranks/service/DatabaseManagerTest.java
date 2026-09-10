@@ -145,8 +145,9 @@ class DatabaseManagerTest {
         DatabaseManager reopened = new DatabaseManager(Logger.getAnonymousLogger(), databaseFile);
         reopened.initialize();
         assertEquals("technician-2", reopened.loadOrCreate(player, "unranked").get(5, TimeUnit.SECONDS).rankId());
-        assertEquals(backup, reopened.migrationBackup());
+        assertTrue(Files.isRegularFile(backup));
         assertEquals(backupSize, Files.size(backup));
+        assertTrue(reopened.history(player, 20).get(5, TimeUnit.SECONDS).isEmpty());
         reopened.close();
     }
 

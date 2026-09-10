@@ -13,48 +13,105 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout exact head
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v5
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Provision PlexonCore 2.0.4 API
+
+      - name: Provision verified PlexonCore 2.0.4 API
         shell: bash
         run: |
           set -euo pipefail
           core_jar="${RUNNER_TEMP}/PlexonCore-2.0.4.jar"
-          curl --fail --location --silent --show-error --output "${core_jar}" "https://github.com/ZpkDxGames/PlexonCore/releases/download/v2.0.4/PlexonCore-2.0.4.jar"
+          curl --fail --location --silent --show-error --output "${core_jar}" \
+            "https://github.com/ZpkDxGames/PlexonCore/releases/download/v2.0.4/PlexonCore-2.0.4.jar"
           echo "61d625a717da9f46ee9231e1970d84b4c317ae12cf4090cdf7c9d39b6a1a9baf  ${core_jar}" | sha256sum --check
-          mvn -B -ntp org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file -Dfile="${core_jar}" -DgroupId=com.zpkdxgames -DartifactId=PlexonCore -Dversion=2.0.4 -Dpackaging=jar -DgeneratePom=true
-      - name: Test and package
+          mvn -B -ntp org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
+            -Dfile="${core_jar}" -DgroupId=com.zpkdxgames -DartifactId=PlexonCore \
+            -Dversion=2.0.4 -Dpackaging=jar -DgeneratePom=true
+
+      - name: Compile, test and package
         run: mvn -B -ntp clean verify
-      - name: Verify distribution
+
+      - name: Report exact test count
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          tests = failures = errors = skipped = 0
+          reports = glob.glob('target/surefire-reports/TEST-*.xml')
+          for path in reports:
+              root = ET.parse(path).getroot()
+              tests += int(root.attrib.get('tests', 0))
+              failures += int(root.attrib.get('failures', 0))
+              errors += int(root.attrib.get('errors', 0))
+              skipped += int(root.attrib.get('skipped', 0))
+          summary = f'TEST_COUNT={tests} FAILURES={failures} ERRORS={errors} SKIPPED={skipped}'
+          print(summary)
+          with open('target/TEST_SUMMARY.txt', 'w', encoding='utf-8') as out:
+              out.write(summary + '\n')
+          if not reports or tests == 0 or failures or errors:
+              raise SystemExit(1)
+          PY
+
+      - name: Verify release distribution and dependency isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR='target/PlexonRanks-3.0.0-rc.1.jar'
+          test -s "$JAR"
           mapfile -t jars < <(find target -maxdepth 1 -type f -name 'PlexonRanks-*.jar' -print)
           test "${#jars[@]}" -eq 1
-          jar_path=${jars[0]}
-          test -s "${jar_path}"
-          jar tf "${jar_path}" > target/jar-contents.txt
+          test "${jars[0]}" = "$JAR"
+          unzip -p "$JAR" plugin.yml | grep -F "version: '3.0.0-rc.1'"
+          jar tf "$JAR" > target/jar-contents.txt
           grep -qx 'plugin.yml' target/jar-contents.txt
           grep -qx 'com/zpkdxgames/plexonranks/PlexonRanksPlugin.class' target/jar-contents.txt
           grep -qx 'org/sqlite/JDBC.class' target/jar-contents.txt
-          if grep -q '^com/zpkdxgames/plexoncore/' target/jar-contents.txt; then echo "PlexonCore runtime classes must not be shaded into PlexonRanks" >&2; exit 1; fi
-          jar_name=$(basename "${jar_path}")
-          test "$jar_name" = 'PlexonRanks-2.2.1.jar'
+          if grep -q '^com/zpkdxgames/plexoncore/' target/jar-contents.txt; then echo 'PlexonCore classes were shaded' >&2; exit 1; fi
+          if grep -q '^net/milkbowl/vault/' target/jar-contents.txt; then echo 'Vault classes were shaded' >&2; exit 1; fi
+          if grep -q '^net/luckperms/' target/jar-contents.txt; then echo 'LuckPerms classes were shaded' >&2; exit 1; fi
+          if grep -q '^me/clip/placeholderapi/' target/jar-contents.txt; then echo 'PlaceholderAPI classes were shaded' >&2; exit 1; fi
+
+      - name: Verify Java 25 class-file major version 69
+        shell: bash
+        run: |
+          set -euo pipefail
+          javap -verbose -classpath target/PlexonRanks-3.0.0-rc.1.jar \
+            com.zpkdxgames.plexonranks.PlexonRanksPlugin | grep -F 'major version: 69'
+
+      - name: Verify source whitespace and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check origin/main...HEAD
           cd target
-          sha256sum "${jar_name}" > SHA256SUMS.txt
+          sha256sum PlexonRanks-3.0.0-rc.1.jar > SHA256SUMS.txt
           sha256sum --check SHA256SUMS.txt
-      - name: Check whitespace
-        run: git diff --check origin/main...HEAD
-      - uses: actions/upload-artifact@v4
+          sha256=$(cut -d' ' -f1 SHA256SUMS.txt)
+          size=$(stat -c '%s' PlexonRanks-3.0.0-rc.1.jar)
+          printf 'COMMIT_SHA=%s\nJAR_SIZE=%s\nJAR_SHA256=%s\n' "$GITHUB_SHA" "$size" "$sha256" > PROVENANCE.txt
+          cat TEST_SUMMARY.txt
+          cat SHA256SUMS.txt
+          cat PROVENANCE.txt
+
+      - name: Upload verified candidate
+        uses: actions/upload-artifact@v4
         with:
-          name: PlexonRanks-2.2.1-${{ github.sha }}
+          name: PlexonRanks-3.0.0-rc.1-${{ github.sha }}
           path: |
-            target/PlexonRanks-2.2.1.jar
+            target/PlexonRanks-3.0.0-rc.1.jar
             target/SHA256SUMS.txt
+            target/TEST_SUMMARY.txt
+            target/PROVENANCE.txt
           if-no-files-found: error

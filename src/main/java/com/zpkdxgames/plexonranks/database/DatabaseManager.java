@@ -15,6 +15,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -98,17 +99,8 @@ public final class DatabaseManager implements AutoCloseable {
 
     public CompletableFuture<PlayerRankData> loadOrCreate(UUID uuid, String defaultRankId) {
         return submit(connection -> {
-            try (PreparedStatement select = connection.prepareStatement(
-                    "SELECT rank_id, updated_at, first_joined_at FROM pr_players WHERE uuid=?")) {
-                select.setString(1, uuid.toString());
-                try (ResultSet result = select.executeQuery()) {
-                    if (result.next()) {
-                        return new PlayerRankData(uuid, result.getString("rank_id"),
-                                Instant.ofEpochMilli(result.getLong("updated_at")),
-                                Instant.ofEpochMilli(result.getLong("first_joined_at")));
-                    }
-                }
-            }
+            PlayerRankData existing = loadExistingOrNull(connection, uuid);
+            if (existing != null) return existing;
             long now = System.currentTimeMillis();
             try (PreparedStatement insert = connection.prepareStatement(
                     "INSERT INTO pr_players(uuid, rank_id, updated_at, first_joined_at) VALUES(?,?,?,?)")) {
@@ -118,9 +110,7 @@ public final class DatabaseManager implements AutoCloseable {
                 insert.setLong(4, now);
                 insert.executeUpdate();
             } catch (SQLException race) {
-                if (race.getMessage() == null || !race.getMessage().toLowerCase().contains("unique")) {
-                    throw race;
-                }
+                if (race.getMessage() == null || !race.getMessage().toLowerCase().contains("unique")) throw race;
                 return loadExisting(connection, uuid);
             }
             return new PlayerRankData(uuid, defaultRankId, Instant.ofEpochMilli(now), Instant.ofEpochMilli(now));
@@ -143,15 +133,7 @@ public final class DatabaseManager implements AutoCloseable {
                     insert.setLong(6, now);
                     insert.executeUpdate();
                 }
-                int changed;
-                try (PreparedStatement update = connection.prepareStatement(
-                        "UPDATE pr_players SET rank_id=?, updated_at=? WHERE uuid=? AND rank_id=?")) {
-                    update.setString(1, toRank);
-                    update.setLong(2, now);
-                    update.setString(3, uuid.toString());
-                    update.setString(4, expectedFrom);
-                    changed = update.executeUpdate();
-                }
+                int changed = updateRankCas(connection, uuid, expectedFrom, toRank, now);
                 if (changed != 1) {
                     connection.rollback();
                     return false;
@@ -181,15 +163,7 @@ public final class DatabaseManager implements AutoCloseable {
             connection.setAutoCommit(false);
             try {
                 long now = System.currentTimeMillis();
-                int changed;
-                try (PreparedStatement update = connection.prepareStatement(
-                        "UPDATE pr_players SET rank_id=?, updated_at=? WHERE uuid=? AND rank_id=?")) {
-                    update.setString(1, restoreRank);
-                    update.setLong(2, now);
-                    update.setString(3, uuid.toString());
-                    update.setString(4, expectedCurrent);
-                    changed = update.executeUpdate();
-                }
+                int changed = updateRankCas(connection, uuid, expectedCurrent, restoreRank, now);
                 if (changed != 1) {
                     connection.rollback();
                     return false;
@@ -197,6 +171,39 @@ public final class DatabaseManager implements AutoCloseable {
                 updateTransactionStatus(connection, transactionId, status, detail, now);
                 connection.commit();
                 return true;
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(oldAutoCommit);
+            }
+        });
+    }
+
+    /**
+     * Administrative compare-and-set mutation. Missing players and stale rank expectations fail closed.
+     * The history row is written atomically with the authoritative rank change.
+     */
+    public CompletableFuture<Optional<PlayerRankData>> compareAndSetRank(UUID uuid, String expectedRankId,
+                                                                         String rankId, String cause,
+                                                                         String transactionId) {
+        return submit(connection -> {
+            boolean oldAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                long now = System.currentTimeMillis();
+                int changed = updateRankCas(connection, uuid, expectedRankId, rankId, now);
+                if (changed != 1) {
+                    connection.rollback();
+                    return Optional.empty();
+                }
+                if (!expectedRankId.equalsIgnoreCase(rankId)) {
+                    insertHistory(connection, uuid, expectedRankId, rankId, cause, transactionId,
+                            "COMPLETED", now, "Administrative authoritative rank compare-and-set");
+                }
+                PlayerRankData data = loadExisting(connection, uuid);
+                connection.commit();
+                return Optional.of(data);
             } catch (SQLException exception) {
                 connection.rollback();
                 throw exception;
@@ -229,6 +236,7 @@ public final class DatabaseManager implements AutoCloseable {
         return forceSetRank(uuid, rankId, "ADMIN_SET", UUID.randomUUID().toString());
     }
 
+    /** Used only for explicit repair/bootstrap paths where no prior rank CAS contract exists. */
     public CompletableFuture<PlayerRankData> forceSetRank(UUID uuid, String rankId, String cause, String transactionId) {
         return submit(connection -> {
             boolean oldAutoCommit = connection.getAutoCommit();
@@ -257,7 +265,7 @@ public final class DatabaseManager implements AutoCloseable {
                 }
                 if (!from.equalsIgnoreCase(rankId)) {
                     insertHistory(connection, uuid, from, rankId, cause, transactionId,
-                            "COMPLETED", now, "Administrative authoritative rank mutation");
+                            "COMPLETED", now, "Authoritative rank repair/bootstrap mutation");
                 }
                 connection.commit();
                 return loadExisting(connection, uuid);
@@ -282,15 +290,10 @@ public final class DatabaseManager implements AutoCloseable {
                 try (ResultSet rows = statement.executeQuery()) {
                     while (rows.next()) {
                         result.add(new RankHistoryEntry(
-                                rows.getLong("id"),
-                                UUID.fromString(rows.getString("player_uuid")),
-                                rows.getString("from_rank"),
-                                rows.getString("to_rank"),
-                                rows.getString("cause"),
-                                rows.getString("transaction_id"),
-                                rows.getString("status"),
-                                Instant.ofEpochMilli(rows.getLong("created_at")),
-                                rows.getString("detail")));
+                                rows.getLong("id"), UUID.fromString(rows.getString("player_uuid")),
+                                rows.getString("from_rank"), rows.getString("to_rank"), rows.getString("cause"),
+                                rows.getString("transaction_id"), rows.getString("status"),
+                                Instant.ofEpochMilli(rows.getLong("created_at")), rows.getString("detail")));
                     }
                 }
             }
@@ -302,9 +305,7 @@ public final class DatabaseManager implements AutoCloseable {
         return submit(connection -> {
             Path normalized = target.toAbsolutePath().normalize();
             Files.createDirectories(normalized.getParent());
-            if (Files.exists(normalized)) {
-                throw new IllegalStateException("Backup target already exists: " + normalized.getFileName());
-            }
+            if (Files.exists(normalized)) throw new IllegalStateException("Backup target already exists: " + normalized.getFileName());
             try (Statement checkpoint = connection.createStatement()) {
                 checkpoint.execute("PRAGMA wal_checkpoint(FULL)");
                 checkpoint.execute("VACUUM INTO '" + normalized.toString().replace("'", "''") + "'");
@@ -313,52 +314,21 @@ public final class DatabaseManager implements AutoCloseable {
         });
     }
 
-    public Path databasePath() {
-        return databasePath;
-    }
-
-    public int schemaVersion() {
-        return SCHEMA_VERSION;
-    }
-
-    public Path migrationBackup() {
-        return migrationBackup;
-    }
-
-    public String lastFailure() {
-        return lastFailure;
-    }
-
-    public int queueDepth() {
-        return executor.getQueue().size();
-    }
-
-    public int queueCapacity() {
-        return queueCapacity;
-    }
-
-    public int queueHighWater() {
-        return queueHighWater.get();
-    }
-
-    public long submittedCount() {
-        return submitted.get();
-    }
-
-    public long completedCount() {
-        return completed.get();
-    }
-
-    public long failureCount() {
-        return failures.get();
-    }
+    public Path databasePath() { return databasePath; }
+    public int schemaVersion() { return SCHEMA_VERSION; }
+    public Path migrationBackup() { return migrationBackup; }
+    public String lastFailure() { return lastFailure; }
+    public int queueDepth() { return executor.getQueue().size(); }
+    public int queueCapacity() { return queueCapacity; }
+    public int queueHighWater() { return queueHighWater.get(); }
+    public long submittedCount() { return submitted.get(); }
+    public long completedCount() { return completed.get(); }
+    public long failureCount() { return failures.get(); }
 
     private void migrate() throws Exception {
         int current = 0;
         try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT MAX(version) FROM pr_schema")) {
-            if (result.next()) {
-                current = result.getInt(1);
-            }
+            if (result.next()) current = result.getInt(1);
         }
         if (current > SCHEMA_VERSION) {
             throw new SQLException("Database schema " + current + " is newer than supported schema " + SCHEMA_VERSION);
@@ -412,6 +382,9 @@ public final class DatabaseManager implements AutoCloseable {
     private void createPre3Backup() throws Exception {
         Path backup = databasePath.resolveSibling(databasePath.getFileName() + ".pre-3.0.bak");
         if (Files.exists(backup)) {
+            if (!Files.isRegularFile(backup) || Files.size(backup) == 0L) {
+                throw new IllegalStateException("Existing pre-3.0 migration backup is empty or invalid: " + backup.getFileName());
+            }
             migrationBackup = backup;
             return;
         }
@@ -424,6 +397,18 @@ public final class DatabaseManager implements AutoCloseable {
         }
         migrationBackup = backup;
         logger.info("Created pre-3.0 SQLite migration backup: " + backup.getFileName());
+    }
+
+    private static int updateRankCas(Connection connection, UUID uuid, String expectedRankId,
+                                     String rankId, long now) throws SQLException {
+        try (PreparedStatement update = connection.prepareStatement(
+                "UPDATE pr_players SET rank_id=?, updated_at=? WHERE uuid=? AND rank_id=?")) {
+            update.setString(1, rankId);
+            update.setLong(2, now);
+            update.setString(3, uuid.toString());
+            update.setString(4, expectedRankId);
+            return update.executeUpdate();
+        }
     }
 
     private void insertHistory(Connection connection, UUID uuid, String fromRank, String toRank, String cause,
@@ -463,9 +448,7 @@ public final class DatabaseManager implements AutoCloseable {
 
     private PlayerRankData loadExisting(Connection connection, UUID uuid) throws SQLException {
         PlayerRankData existing = loadExistingOrNull(connection, uuid);
-        if (existing == null) {
-            throw new SQLException("Player row was not found after creation race");
-        }
+        if (existing == null) throw new SQLException("Player row was not found after creation race");
         return existing;
     }
 
@@ -474,9 +457,7 @@ public final class DatabaseManager implements AutoCloseable {
                 "SELECT rank_id, updated_at, first_joined_at FROM pr_players WHERE uuid=?")) {
             select.setString(1, uuid.toString());
             try (ResultSet result = select.executeQuery()) {
-                if (!result.next()) {
-                    return null;
-                }
+                if (!result.next()) return null;
                 return new PlayerRankData(uuid, result.getString("rank_id"),
                         Instant.ofEpochMilli(result.getLong("updated_at")),
                         Instant.ofEpochMilli(result.getLong("first_joined_at")));
@@ -527,11 +508,8 @@ public final class DatabaseManager implements AutoCloseable {
             Thread.currentThread().interrupt();
             executor.shutdownNow();
         }
-
         try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-            }
+            if (connection != null && !connection.isClosed()) connection.close();
         } catch (SQLException exception) {
             lastFailure = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
             logger.warning("Database did not close cleanly: " + lastFailure);
@@ -539,26 +517,17 @@ public final class DatabaseManager implements AutoCloseable {
     }
 
     private static ThreadPoolExecutor createExecutor(String name, int queueCapacity) {
-        return new ThreadPoolExecutor(
-                1,
-                1,
-                0L,
-                TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(queueCapacity),
+        return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(queueCapacity),
                 runnable -> {
                     Thread thread = new Thread(runnable, name);
                     thread.setDaemon(true);
                     return thread;
-                },
-                new ThreadPoolExecutor.AbortPolicy()
-        );
+                }, new ThreadPoolExecutor.AbortPolicy());
     }
 
     private static String rootMessage(Throwable throwable) {
         Throwable root = throwable;
-        while (root.getCause() != null) {
-            root = root.getCause();
-        }
+        while (root.getCause() != null) root = root.getCause();
         return root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage();
     }
 

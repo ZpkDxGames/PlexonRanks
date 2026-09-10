@@ -1,6 +1,7 @@
 package com.zpkdxgames.plexonranks.model;
 
 import java.util.List;
+import java.util.Locale;
 
 public record Rank(
         String id,
@@ -19,7 +20,8 @@ public record Rank(
 ) {
     public Rank {
         id = id == null ? "" : id.trim();
-        tier = tier == null || tier.isBlank() ? "Progression" : tier.trim();
+        tier = tier == null || tier.isBlank() || "Progression".equalsIgnoreCase(tier)
+                ? inferredTier(id) : tier.trim();
         nextRankId = nextRankId == null ? "" : nextRankId.trim();
         bypassPermission = bypassPermission == null ? "" : bypassPermission.trim();
         requirements = List.copyOf(requirements);
@@ -40,7 +42,17 @@ public record Rank(
             boolean announce,
             RankMenu menu
     ) {
-        this(id, order, "Progression", "", enabled, visible, defaultRank, bypassPermission,
+        this(id, order, "", "", enabled, visible, defaultRank, bypassPermission,
                 display, requirements, rewards, announce, menu);
+    }
+
+    private static String inferredTier(String id) {
+        if (id == null || id.isBlank() || id.equalsIgnoreCase("unranked")) return "Starter";
+        String base = id;
+        int dash = id.indexOf('-');
+        if (dash > 0) base = id.substring(0, dash);
+        String normalized = base.replace('_', ' ').trim().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty()) return "Progression";
+        return Character.toUpperCase(normalized.charAt(0)) + normalized.substring(1);
     }
 }

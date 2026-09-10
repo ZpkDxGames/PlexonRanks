@@ -1,4 +1,4 @@
-# PlexonRanks 2.2 — core settings
+# PlexonRanks 3.0 — core settings
 schema-version: 2
 
 plugin:
@@ -60,7 +60,7 @@ discord:
 backup:
   keep: 10
 
-# FIRST safely moves players to the first rank when their saved rank was deleted
-# or disabled. FAIL keeps the row untouched and reports the configuration problem.
+# FAIL preserves an unknown/deleted rank row and rejects loading until an operator
+# fixes the configuration/data issue. FIRST is an explicit opt-in repair to the root.
 join:
-  missing-rank-fallback: FIRST
+  missing-rank-fallback: FAIL

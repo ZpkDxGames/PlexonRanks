@@ -96,9 +96,18 @@ class Phase2ProgressionGraphTest {
     }
 
     @Test
-    void tierMetadataIsImmutableProgressionData() {
-        Rank rank = rank("root", 0, true, "Newbie", "");
-        assertEquals("Newbie", rank.tier());
+    void explicitTierMetadataIsPreserved() {
+        assertEquals("Newbie", rank("root", 0, true, "Newbie", "").tier());
+    }
+
+    @Test
+    void omittedTierIsDeterministicallyInferredFromStableId() {
+        Rank inferred = new Rank("technician-4", 4, true, true, true, "",
+                display("technician-4"), List.of(), List.of(), true, menu());
+        assertEquals("Technician", inferred.tier());
+        Rank starter = new Rank("unranked", 0, true, true, true, "",
+                display("unranked"), List.of(), List.of(), true, menu());
+        assertEquals("Starter", starter.tier());
     }
 
     private static Rank rank(String id, int order, boolean root, String tier, String next) {

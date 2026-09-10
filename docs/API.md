@@ -1,89 +1,55 @@
-# PlexonRanks Public API
+# PlexonRanks 3.0 Public API
 
-PlexonRanks owns rank-domain APIs and events. PlexonCore advertises the module but does not replace these contracts.
+PlexonRanks registers `PlexonRanksAPI` through Bukkit's ServicesManager after a successful enable. Consumers should resolve the registered service rather than constructing implementation classes.
 
-## Obtaining `PlexonRanksAPI`
+## Authority and threading
 
-```java
-RegisteredServiceProvider<PlexonRanksAPI> registration =
-        Bukkit.getServicesManager().getRegistration(PlexonRanksAPI.class);
-if (registration == null) {
-    return;
-}
-PlexonRanksAPI ranks = registration.getProvider();
-```
+SQLite-backed PlexonRanks state is authoritative for the current rank. LuckPerms is a managed projection of configured persistent permission/group rewards.
 
-The service is registered during PlexonRanks startup before the Core module is marked `READY`.
+Online rank state is cached. The immutable current/next rank views read that cached state. `progression(UUID)` evaluates live player requirements and therefore requires an online, loaded player on the Bukkit primary thread. `history(UUID, int)` is asynchronous and returns a `CompletableFuture`; callers must not block the server thread waiting for it.
 
-## API methods
+## 3.0 immutable views
+
+Preferred methods:
 
 ```java
-Optional<Rank> getRank(UUID playerId)
-Optional<Rank> getNextRank(UUID playerId)
-Optional<Rank> getRankById(String rankId)
-List<Rank> getRanks()
-boolean canRankup(UUID playerId)
+Optional<RankView> currentView(UUID playerId);
+Optional<RankView> nextView(UUID playerId);
+List<RankView> getRankViews();
+Optional<ProgressionView> progression(UUID playerId);
+CompletableFuture<List<RankHistoryEntry>> history(UUID playerId, int limit);
+boolean canRankup(UUID playerId);
 ```
 
-These methods remain part of the 2.1.0 compatibility contract.
+`RankView` exposes stable ID, order, tier, formatted display values, and terminal state without exposing mutable configuration internals.
 
-## `PlexonRankupEvent`
+`RequirementView` exposes type, current, required, normalized progress, completion and an immutable values map. Progress is clamped to `0.0..1.0` for presentation.
 
-Class:
+`ProgressionView` combines current rank, optional next rank, evaluated requirements, normalized overall progress, rank-up readiness and maximum-rank state.
 
-```text
-com.zpkdxgames.plexonranks.event.PlexonRankupEvent
-```
+History entries expose previous/new rank IDs, cause, transaction ID, status, timestamp and detail. The requested history limit is bounded by the persistence layer.
 
-Important accessors:
+## 2.x compatibility surface
+
+The following methods remain available in 3.0 for existing integrations but are deprecated in favor of immutable views:
 
 ```java
-Player getPlayer()
-Rank from()
-Rank to()
-String transactionId()
+Optional<Rank> getRank(UUID playerId);
+Optional<Rank> getNextRank(UUID playerId);
+Optional<Rank> getRankById(String rankId);
+List<Rank> getRanks();
 ```
 
-A successful player rank-up emits one `PlexonRankupEvent` after the saved rank transition and reward phase reaches the success-event point. Failed requirement checks, cancelled pre-rankup events, and failed rank commits do not emit the success event.
+They are not scheduled for removal in the 3.0 RC, but new integrations should use the immutable view methods.
 
-### Transaction ID semantics
+## Events
 
-`transactionId()` is the durable identifier for one logical rank-up transaction. It is generated once before the database commit and is persisted with the transaction. Integrations such as PlexonQuests can use it for deduplication.
+`PlexonRankPreRankupEvent` is the cancellable pre-transition hook.
 
-The ID must remain non-empty and unique across independent successful rank-up transactions.
+`PlexonRankChangeEvent` is emitted after a committed player/admin rank change is considered successful by the corresponding coordinator.
 
-## Other events
+`PlexonRankupEvent` preserves the durable `transactionId` contract. Arbitrary external command rewards are an explicit irreversible boundary; if an external command fails after prior commands have executed, the authoritative rank remains advanced, the transaction is marked `EXTERNAL_REWARD_FAILED`, and PlexonRanks does not automatically replay the command sequence.
 
-### `PlexonRankPreRankupEvent`
+## Compatibility expectations
 
-A cancellable event fired before requirement consumption and commit. Consumers may cancel a player rank-up safely.
-
-### `PlexonRankChangeEvent`
-
-Emitted for committed player rank changes and applicable administrative transitions.
-
-### `RankChangeCause`
-
-Current causes include:
-
-- `RANKUP`
-- `ADMIN_SET`
-- `ADMIN_PROMOTE`
-- `ADMIN_DEMOTE`
-- `ADMIN_RESET`
-
-Consumers should not assume an administrative change is equivalent to a normal player `/rankup`.
-
-## PlexonQuests interoperability
-
-PlexonQuests continues to integrate through the PlexonRanks public API and events. The intended flow remains:
-
-```text
-/rankup
-  -> PlexonRanks validates and commits
-  -> PlexonRankupEvent fires once
-  -> PlexonQuests receives the event
-  -> matching rank objective progresses once
-```
-
-PlexonCore provides ecosystem discovery and health around this relationship; it is not a replacement event bus for rank gameplay.
+Consumers should treat rank IDs as stable persistence identifiers and display names/tags as presentation values. Do not infer progression solely from display text. Use `nextView`, `progression`, or the registry order exposed through immutable rank views.

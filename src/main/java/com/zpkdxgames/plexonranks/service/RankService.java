@@ -76,6 +76,7 @@ public final class RankService {
                 configs.current().registry().nextAccessible(rank, player::hasPermission));
     }
 
+    /** Compatibility/admin repair surface. Destructive operator mutations use compareAndSetRank. */
     public CompletableFuture<PlayerRankData> setRank(UUID uuid, Rank rank) {
         return setRank(uuid, rank, "ADMIN_SET", UUID.randomUUID().toString());
     }
@@ -85,6 +86,16 @@ public final class RankService {
             cache.put(uuid, data);
             return data;
         });
+    }
+
+    public CompletableFuture<Optional<PlayerRankData>> compareAndSetRank(UUID uuid, String expectedRankId,
+                                                                         Rank rank, String cause,
+                                                                         String transactionId) {
+        return database.compareAndSetRank(uuid, expectedRankId, rank.id(), cause, transactionId)
+                .thenApply(updated -> {
+                    updated.ifPresent(data -> cache.put(uuid, data));
+                    return updated;
+                });
     }
 
     public void acceptCommitted(UUID uuid, Rank rank) {
@@ -150,7 +161,8 @@ public final class RankService {
             return CompletableFuture.completedFuture(data);
         }
         String behavior = configs.current().settings().missingRankFallback();
-        plugin.getLogger().warning("Player " + data.uuid() + " references missing rank '" + data.rankId() + "'. Fallback: " + behavior);
+        plugin.getLogger().warning("Player " + data.uuid() + " references missing rank '" + data.rankId()
+                + "'. No silent reset will occur unless join.missing-rank-fallback is explicitly FIRST. Fallback: " + behavior);
         if ("FIRST".equalsIgnoreCase(behavior)) {
             return database.forceSetRank(data.uuid(), configs.current().registry().defaultRank().id(),
                     "MISSING_RANK_REPAIR", UUID.randomUUID().toString());

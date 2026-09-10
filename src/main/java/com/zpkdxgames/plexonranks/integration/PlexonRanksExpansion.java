@@ -48,35 +48,21 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
         this.render = render;
     }
 
-    @Override
-    public @NotNull String getIdentifier() {
-        return "plexonranks";
-    }
-
-    @Override
-    public @NotNull String getAuthor() {
-        return "ZpkDxGames";
-    }
-
-    @Override
-    public @NotNull String getVersion() {
-        return plugin.getPluginMeta().getVersion();
-    }
-
-    @Override
-    public boolean persist() {
-        return true;
-    }
+    @Override public @NotNull String getIdentifier() { return "plexonranks"; }
+    @Override public @NotNull String getAuthor() { return "ZpkDxGames"; }
+    @Override public @NotNull String getVersion() { return plugin.getPluginMeta().getVersion(); }
+    @Override public boolean persist() { return true; }
 
     @Override
     public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
         if (player == null || !ranks.loaded(player.getUniqueId())) return "";
 
-        String key = params.toLowerCase(Locale.ROOT);
-        String recursionKey = player.getUniqueId() + ":" + key;
+        String requested = params.toLowerCase(Locale.ROOT);
+        String key = alias(requested);
+        String recursionKey = player.getUniqueId() + ":" + requested;
         Set<String> requests = activeRequests.get();
         if (!requests.add(recursionKey)) {
-            warnRecursive(player, key);
+            warnRecursive(player, requested);
             return "";
         }
 
@@ -88,6 +74,7 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
             return switch (key) {
                 case "rank_id" -> current.id();
                 case "rank_order" -> String.valueOf(current.order());
+                case "rank_tier" -> current.tier();
                 case "rank_name" -> current.display().name();
                 case "rank_short_name" -> current.display().shortName();
                 case "rank_tag" -> current.display().tag();
@@ -98,10 +85,9 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
                 case "rank_name_legacy" -> formatted(current.display().name(), "LEGACY");
                 case "rank_tag_legacy" -> formatted(current.display().tag(), "LEGACY");
                 case "next_id" -> displaySnapshot(player, current, generation).next().map(Rank::id).orElse("");
-                case "next_name" -> displaySnapshot(player, current, generation).next()
-                        .map(rank -> rank.display().name()).orElse("");
-                case "next_short_name" -> displaySnapshot(player, current, generation).next()
-                        .map(rank -> rank.display().shortName()).orElse("");
+                case "next_name" -> displaySnapshot(player, current, generation).next().map(rank -> rank.display().name()).orElse("");
+                case "next_short_name" -> displaySnapshot(player, current, generation).next().map(rank -> rank.display().shortName()).orElse("");
+                case "next_tier" -> displaySnapshot(player, current, generation).next().map(Rank::tier).orElse("");
                 case "next_name_plain" -> displaySnapshot(player, current, generation).next()
                         .map(rank -> formatted(rank.display().name(), "PLAIN")).orElse("");
                 case "next_name_mm", "next_name_minimessage" -> displaySnapshot(player, current, generation).next()
@@ -110,19 +96,16 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
                         .map(rank -> formatted(rank.display().name(), "LEGACY")).orElse("");
                 case "is_max_rank" -> String.valueOf(displaySnapshot(player, current, generation).next().isEmpty());
                 case "progress_percent" -> progressPercent(player, current, generation);
+                case "can_rankup" -> String.valueOf(canRankup(player, current, generation));
                 default -> requirementPlaceholder(player, current, generation, key);
             };
         } finally {
             requests.remove(recursionKey);
-            if (requests.isEmpty()) {
-                activeRequests.remove();
-            }
+            if (requests.isEmpty()) activeRequests.remove();
         }
     }
 
-    public void invalidate(UUID playerId) {
-        displaySnapshots.remove(playerId);
-    }
+    public void invalidate(UUID playerId) { displaySnapshots.remove(playerId); }
 
     public void clearCaches() {
         displaySnapshots.clear();
@@ -130,8 +113,27 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
         cacheGeneration = null;
     }
 
-    public int cachedPlayers() {
-        return displaySnapshots.size();
+    public int cachedPlayers() { return displaySnapshots.size(); }
+
+    static String alias(String key) {
+        return switch (key) {
+            case "rank", "rank_display" -> "rank_name";
+            case "rank_number" -> "rank_order";
+            case "next_rank" -> "next_name";
+            case "progress" -> "progress_percent";
+            case "money_current" -> "requirement_money_current";
+            case "money_required" -> "requirement_money_required";
+            case "playtime_current" -> "requirement_playtime_current";
+            case "playtime_required" -> "requirement_playtime_required";
+            case "xp_current" -> "requirement_xp_current";
+            case "xp_required" -> "requirement_xp_required";
+            default -> key;
+        };
+    }
+
+    private boolean canRankup(Player player, Rank current, ConfigSnapshot generation) {
+        DisplaySnapshot snapshot = displaySnapshot(player, current, generation);
+        return snapshot.next().isPresent() && progress(player, snapshot).stream().allMatch(RequirementProgress::complete);
     }
 
     private String progressPercent(Player player, Rank current, ConfigSnapshot generation) {
@@ -162,6 +164,8 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
             case "current" -> NumberFormats.number(value.get().current());
             case "required" -> NumberFormats.number(value.get().required());
             case "missing" -> NumberFormats.number(value.get().missing());
+            case "percent" -> NumberFormats.number(value.get().normalized() * 100.0);
+            case "complete" -> String.valueOf(value.get().complete());
             default -> null;
         };
     }
@@ -173,14 +177,8 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
                 && cached.currentRankId().equals(current.id()) && now < cached.expiresAtNanos()) {
             return cached;
         }
-
         Optional<Rank> next = generation.registry().nextAccessible(current, player::hasPermission);
-        DisplaySnapshot replacement = new DisplaySnapshot(
-                generation,
-                current.id(),
-                next,
-                now + snapshotTtlNanos
-        );
+        DisplaySnapshot replacement = new DisplaySnapshot(generation, current.id(), next, now + snapshotTtlNanos);
         displaySnapshots.put(player.getUniqueId(), replacement);
         return replacement;
     }
@@ -223,15 +221,12 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
     private void warnRecursive(Player player, String key) {
         long now = System.nanoTime();
         long previous = lastRecursionWarning.get();
-        if (now - previous < RECURSION_WARNING_INTERVAL_NANOS || !lastRecursionWarning.compareAndSet(previous, now)) {
-            return;
-        }
+        if (now - previous < RECURSION_WARNING_INTERVAL_NANOS || !lastRecursionWarning.compareAndSet(previous, now)) return;
         plugin.getLogger().warning("Blocked recursive PlaceholderAPI evaluation for %plexonranks_" + key
                 + "% (player " + player.getUniqueId() + ")");
     }
 
-    private record FormatKey(String value, String format) {
-    }
+    private record FormatKey(String value, String format) { }
 
     private static final class DisplaySnapshot {
         private final ConfigSnapshot generation;
@@ -246,29 +241,11 @@ public final class PlexonRanksExpansion extends PlaceholderExpansion {
             this.next = next;
             this.expiresAtNanos = expiresAtNanos;
         }
-
-        private ConfigSnapshot generation() {
-            return generation;
-        }
-
-        private String currentRankId() {
-            return currentRankId;
-        }
-
-        private Optional<Rank> next() {
-            return next;
-        }
-
-        private long expiresAtNanos() {
-            return expiresAtNanos;
-        }
-
-        private List<RequirementProgress> progress() {
-            return progress;
-        }
-
-        private void progress(List<RequirementProgress> progress) {
-            this.progress = progress;
-        }
+        private ConfigSnapshot generation() { return generation; }
+        private String currentRankId() { return currentRankId; }
+        private Optional<Rank> next() { return next; }
+        private long expiresAtNanos() { return expiresAtNanos; }
+        private List<RequirementProgress> progress() { return progress; }
+        private void progress(List<RequirementProgress> progress) { this.progress = progress; }
     }
 }

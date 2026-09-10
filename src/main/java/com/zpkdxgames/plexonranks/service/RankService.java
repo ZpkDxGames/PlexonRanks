@@ -4,6 +4,7 @@ import com.zpkdxgames.plexonranks.config.ConfigManager;
 import com.zpkdxgames.plexonranks.database.DatabaseManager;
 import com.zpkdxgames.plexonranks.model.PlayerRankData;
 import com.zpkdxgames.plexonranks.model.Rank;
+import com.zpkdxgames.plexonranks.model.RankHistoryEntry;
 import com.zpkdxgames.plexonranks.reward.RewardEngine;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -35,15 +36,11 @@ public final class RankService {
 
     public CompletableFuture<PlayerRankData> load(UUID uuid) {
         PlayerRankData cached = cache.get(uuid);
-        if (cached != null) {
-            return CompletableFuture.completedFuture(cached);
-        }
+        if (cached != null) return CompletableFuture.completedFuture(cached);
 
         CompletableFuture<PlayerRankData> promise = new CompletableFuture<>();
         CompletableFuture<PlayerRankData> existing = loading.putIfAbsent(uuid, promise);
-        if (existing != null) {
-            return existing;
-        }
+        if (existing != null) return existing;
 
         database.loadOrCreate(uuid, configs.current().registry().defaultRank().id())
                 .thenCompose(this::repairMissingRank)
@@ -60,29 +57,14 @@ public final class RankService {
                         loading.remove(uuid, promise);
                     }
                 });
-
         return promise;
     }
 
-    public boolean loaded(UUID uuid) {
-        return cache.containsKey(uuid);
-    }
-
-    public int loadedCount() {
-        return cache.size();
-    }
-
-    public int loadingCount() {
-        return loading.size();
-    }
-
-    public int reconcilingCount() {
-        return reconciling.size();
-    }
-
-    public Optional<PlayerRankData> data(UUID uuid) {
-        return Optional.ofNullable(cache.get(uuid));
-    }
+    public boolean loaded(UUID uuid) { return cache.containsKey(uuid); }
+    public int loadedCount() { return cache.size(); }
+    public int loadingCount() { return loading.size(); }
+    public int reconcilingCount() { return reconciling.size(); }
+    public Optional<PlayerRankData> data(UUID uuid) { return Optional.ofNullable(cache.get(uuid)); }
 
     public Optional<Rank> current(UUID uuid) {
         PlayerRankData data = cache.get(uuid);
@@ -95,7 +77,11 @@ public final class RankService {
     }
 
     public CompletableFuture<PlayerRankData> setRank(UUID uuid, Rank rank) {
-        return database.forceSetRank(uuid, rank.id()).thenApply(data -> {
+        return setRank(uuid, rank, "ADMIN_SET", UUID.randomUUID().toString());
+    }
+
+    public CompletableFuture<PlayerRankData> setRank(UUID uuid, Rank rank, String cause, String transactionId) {
+        return database.forceSetRank(uuid, rank.id(), cause, transactionId).thenApply(data -> {
             cache.put(uuid, data);
             return data;
         });
@@ -107,16 +93,16 @@ public final class RankService {
         cache.put(uuid, new PlayerRankData(uuid, rank.id(), Instant.now(), firstJoined));
     }
 
-    public CompletableFuture<Void> reconcile(Player player) {
-        return reconcile(player.getUniqueId());
+    public CompletableFuture<List<RankHistoryEntry>> history(UUID uuid, int limit) {
+        return database.history(uuid, limit);
     }
+
+    public CompletableFuture<Void> reconcile(Player player) { return reconcile(player.getUniqueId()); }
 
     public CompletableFuture<Void> reconcile(UUID uuid) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
         CompletableFuture<Void> existing = reconciling.putIfAbsent(uuid, promise);
-        if (existing != null) {
-            return existing;
-        }
+        if (existing != null) return existing;
 
         load(uuid).thenCompose(data -> {
             Rank current = configs.current().registry().byId(data.rankId()).orElse(configs.current().registry().defaultRank());
@@ -124,11 +110,7 @@ public final class RankService {
                     configs.current().settings().cumulativePermissions());
         }).whenComplete((ignored, error) -> {
             try {
-                if (error == null) {
-                    promise.complete(null);
-                } else {
-                    promise.completeExceptionally(error);
-                }
+                if (error == null) promise.complete(null); else promise.completeExceptionally(error);
             } finally {
                 reconciling.remove(uuid, promise);
             }
@@ -154,10 +136,11 @@ public final class RankService {
             plugin.getLogger().warning("Cached player " + data.uuid() + " references unavailable rank '"
                     + data.rankId() + "'. Fallback: " + fallback);
             if ("FIRST".equalsIgnoreCase(fallback)) {
-                database.forceSetRank(data.uuid(), defaultRank.id()).whenComplete((repaired, error) -> {
-                    if (error == null) cache.put(data.uuid(), repaired);
-                    else plugin.getLogger().severe("Could not repair cached rank for " + data.uuid() + ": " + error.getMessage());
-                });
+                database.forceSetRank(data.uuid(), defaultRank.id(), "MISSING_RANK_REPAIR", UUID.randomUUID().toString())
+                        .whenComplete((repaired, error) -> {
+                            if (error == null) cache.put(data.uuid(), repaired);
+                            else plugin.getLogger().severe("Could not repair cached rank for " + data.uuid() + ": " + error.getMessage());
+                        });
             }
         }
     }
@@ -169,7 +152,8 @@ public final class RankService {
         String behavior = configs.current().settings().missingRankFallback();
         plugin.getLogger().warning("Player " + data.uuid() + " references missing rank '" + data.rankId() + "'. Fallback: " + behavior);
         if ("FIRST".equalsIgnoreCase(behavior)) {
-            return database.forceSetRank(data.uuid(), configs.current().registry().defaultRank().id());
+            return database.forceSetRank(data.uuid(), configs.current().registry().defaultRank().id(),
+                    "MISSING_RANK_REPAIR", UUID.randomUUID().toString());
         }
         return CompletableFuture.failedFuture(new IllegalStateException("Configured rank no longer exists: " + data.rankId()));
     }

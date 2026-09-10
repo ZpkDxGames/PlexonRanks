@@ -1,6 +1,7 @@
 package com.zpkdxgames.plexonranks.config;
 
 import com.zpkdxgames.plexonranks.model.Rank;
+import com.zpkdxgames.plexonranks.model.RankRegistry;
 import com.zpkdxgames.plexonranks.model.RequirementType;
 import com.zpkdxgames.plexonranks.model.RewardType;
 import com.zpkdxgames.plexonranks.model.ValidationIssue;
@@ -12,7 +13,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 final class ConfigurationValidator {
@@ -64,6 +64,9 @@ final class ConfigurationValidator {
             if (rank.defaultRank() && !rank.enabled()) {
                 issues.add(error("ranks.yml:ranks." + rank.id(), "The default rank must be enabled."));
             }
+            if (rank.tier().isBlank()) {
+                issues.add(error("ranks.yml:ranks." + rank.id() + ".tier", "Tier/category cannot be blank."));
+            }
             if (!rank.menu().material().isBlank() && Material.matchMaterial(rank.menu().material()) == null) {
                 issues.add(error("ranks.yml:ranks." + rank.id() + ".menu.material", "Unknown material " + rank.menu().material() + "."));
             }
@@ -96,12 +99,25 @@ final class ConfigurationValidator {
                         issues.add(error("ranks.yml:ranks." + rank.id() + ".rewards", "Unknown item reward material " + material + "."));
                     }
                 }
+                if (reward.type() == RewardType.LUCKPERMS_GROUP) {
+                    String mode = reward.string("mode", "ADD").toUpperCase(java.util.Locale.ROOT);
+                    if (!List.of("ADD", "SET_PRIMARY").contains(mode)) {
+                        issues.add(error("ranks.yml:ranks." + rank.id() + ".rewards", "LuckPerms group mode must be ADD or SET_PRIMARY."));
+                    }
+                }
                 for (String line : reward.display()) {
                     if (!formatter.valid(line)) {
                         issues.add(error("ranks.yml:ranks." + rank.id() + ".rewards.display", "Malformed formatting: " + line));
                     }
                 }
             });
+        }
+        if (issues.stream().noneMatch(issue -> issue.severity() == ValidationIssue.Severity.ERROR)) {
+            try {
+                new RankRegistry(ranks);
+            } catch (IllegalArgumentException exception) {
+                issues.add(error("ranks.yml:progression", exception.getMessage()));
+            }
         }
         return issues;
     }
@@ -149,7 +165,7 @@ final class ConfigurationValidator {
     }
 
     private static ValidationIssue error(String source, String message) {
-        return new ValidationIssue(ValidationIssue.Severity.ERROR, source, message);
+        return new ValidationIssue(ValidationIssue.Severity.ERROR, source, message == null ? "Unknown validation error" : message);
     }
 
     private static ValidationIssue warning(String source, String message) {

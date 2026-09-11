@@ -7,7 +7,7 @@ generic:
   players-only: "<red>✖ This command can only be used in game.</red>"
   player-not-found: "<red>✖ Player <white>%player%</white> could not be found.</red>"
   data-loading: "<yellow>◆ Your rank data is loading. Please try again in a moment.</yellow>"
-  database-error: "<red>✖ The change could not be completed safely. Check the console for transaction details.</red>"
+  database-error: "<red>✖ The rank change could not be completed safely. Your progression remains protected; please contact staff if this continues.</red>"
   invalid-number: "<red>✖ Enter a valid positive page or amount.</red>"
 
 rank:
@@ -29,7 +29,7 @@ rank:
     - "<gradient:#C850C0:#FF7EB3><bold>NEXT RANK REWARDS</bold></gradient>"
     - "%rewards%"
     - ""
-    - "<click:run_command:'/rankup'><hover:show_text:'<yellow>Attempt your next rank</yellow>'><yellow><bold>➜ /rankup</bold></yellow></hover></click> <gray>when every requirement is complete.</gray>"
+    - "<click:run_command:'/rank'><hover:show_text:'<yellow>Open your Rank Dashboard</yellow>'><yellow><bold>➜ /rank</bold></yellow></hover></click> <gray>for your explicit next action.</gray>"
     - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
   max-lines:
     - "<dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
@@ -52,11 +52,11 @@ rankup:
   success: "<green>✔ Rank upgraded successfully:</green> %rank_name%<green>!</green>"
   broadcast: "<gradient:#4158D0:#C850C0><bold>%player%</bold></gradient> <gray>advanced to</gray> %rank_name%<gray>!</gray>"
   max-rank: "<gradient:#FFE98A:#FFB84D>★ You have already reached the maximum rank.</gradient>"
-  requirements-not-met: "<red>✖ You still need to complete <white>%requirements_remaining%</white> requirement(s) for</red> %rank_name%<red>.</red> <click:run_command:'/rank'><hover:show_text:'<gray>Open your progress report</gray>'><yellow><underlined>View progress</underlined></yellow></hover></click>"
+  requirements-not-met: "<red>✖ You still need to complete <white>%requirements_remaining%</white> requirement(s) for</red> %rank_name%<red>.</red> <click:run_command:'/rank requirements'><hover:show_text:'<gray>Open your requirements</gray>'><yellow><underlined>View requirements</underlined></yellow></hover></click>"
   already-processing: "<yellow>◆ Your previous rank-up is still being processed safely.</yellow>"
   cooldown: "<yellow>◆ Please wait <white>%seconds%s</white> before trying again.</yellow>"
-  cancelled: "<red>✖ Another plugin cancelled this rank-up.</red>"
-  reward-error: "<yellow>⚠ The rank-up did not complete cleanly. PlexonRanks applied its transaction safety policy; an administrator should review any logged failure before retrying.</yellow>"
+  cancelled: "<red>✖ This rank-up was stopped before anything changed.</red>"
+  reward-error: "<yellow>⚠ The rank-up could not finish cleanly. Your progression safety rules were applied; please contact staff before retrying if needed.</yellow>"
   title: "<gradient:#4158D0:#C850C0><bold>RANK UP!</bold></gradient>"
   subtitle: "%rank_name%"
 

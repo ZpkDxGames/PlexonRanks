@@ -58,13 +58,13 @@ public final class RankCommand implements CommandExecutor, TabCompleter {
         }
         switch (args[0].toLowerCase()) {
             case "info" -> show(player);
-            case "menu" -> {
-                if (dashboard != null) dashboard.open(player); else pathMenu.open(player, 1);
-            }
+            case "menu" -> { if (dashboard != null) dashboard.open(player); else pathMenu.open(player, 1); }
             case "path" -> pathMenu.open(player, 1);
-            default -> {
-                if (dashboard != null) dashboard.open(player); else show(player);
-            }
+            case "requirements" -> { if (dashboard != null) dashboard.openRequirements(player); else show(player); }
+            case "rewards" -> { if (dashboard != null) dashboard.openRewards(player); else show(player); }
+            case "history" -> { if (dashboard != null) dashboard.openHistory(player); else show(player); }
+            case "help" -> { if (dashboard != null) dashboard.openHelp(player); else show(player); }
+            default -> { if (dashboard != null) dashboard.open(player); else show(player); }
         }
         return true;
     }
@@ -91,7 +91,7 @@ public final class RankCommand implements CommandExecutor, TabCompleter {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                  @NotNull String alias, @NotNull String[] args) {
-        return args.length == 1 ? List.of("info", "menu", "path").stream()
+        return args.length == 1 ? List.of("info", "menu", "path", "requirements", "rewards", "history", "help").stream()
                 .filter(value -> value.startsWith(args[0].toLowerCase())).toList() : List.of();
     }
 }

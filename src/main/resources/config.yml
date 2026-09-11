@@ -12,6 +12,8 @@ formatting:
 
 rankup:
   cooldown-ms: 750
+  # Legacy compatibility option. Phase 3 keeps parsing this value, but the player
+  # progression path now exposes a labelled Rank Up action instead of a hidden right-click.
   right-click-next-rank: true
 
 permissions:

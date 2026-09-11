@@ -137,7 +137,7 @@ final class ConfigurationValidator {
                 continue;
             }
             Material material = Material.matchMaterial(requirement.string("material", ""));
-            if (material == null || material.isAir()) {
+            if (material == null) {
                 continue;
             }
             if (!seen.add(material)) {

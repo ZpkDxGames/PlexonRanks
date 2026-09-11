@@ -1,10 +1,10 @@
 # PlexonRanks Phase 3 — Player UX Product Layer
 
-## Frozen boundary
+## Accepted boundary
 
-Phase 3 is based exactly on Phase 2 candidate `7817bca4a6b3f5fcdafbe9bf84154c0d0dc2d6fd` from `phase2/3.0.0-premium-rebuild`. The published candidate remains `v3.0.0-rc.1`.
+Phase 3 was originally based on the Phase 2 `3.0.0` premium rebuild and was published through RC1/RC2 before final integration. The accepted Phase 3 implementation head is `0e5023c6e838ad064da58cf6ac8c57e06c02c5c7`; stable `3.0.0` preserves that product architecture plus the final repository-audit validation guard for duplicate consumable item materials.
 
-This branch does not replace the Phase 2 progression engine. SQLite schema 2, rank-state persistence, graph validation, requirement evaluation/consumption, Vault transactions, LuckPerms projection, reward execution/compensation, admin compare-and-set mutation, API views, PlaceholderAPI caches and transactional reload remain authoritative.
+Phase 3 does not replace the progression engine. SQLite schema 2, rank-state persistence, graph validation, requirement evaluation/consumption, Vault transactions, LuckPerms projection, reward execution/compensation, admin compare-and-set mutation, API views, PlaceholderAPI caches and transactional reload remain authoritative.
 
 ## Player journey
 
@@ -38,6 +38,8 @@ Every GUI Rank Up path re-reads current authoritative rank, next rank and requir
 All six existing requirement types remain evaluated by `RequirementEngine` through `RenderService.progress`: Money, XP levels, Playtime, Permission/access, Placeholder-backed objectives and Items.
 
 `RequirementCard` receives an already evaluated `RequirementProgress` and maps it to player text, current/required values, progress where meaningful and a next-step summary. Permission nodes and raw placeholder keys are not shown by default Phase 3 surfaces. The dashboard displays one useful blocker plus `+N more requirements` when additional blockers remain.
+
+Stable configuration validation rejects multiple consumable `ITEM` requirements resolving to the same Bukkit material within one rank. This keeps displayed/evaluated readiness consistent with batched item consumption. Repeated non-consumable item checks and consumable requirements for different materials remain supported.
 
 ## Rewards
 
@@ -90,4 +92,4 @@ Schema versions remain unchanged. Existing rank definitions, database and LuckPe
 17. Multiple simultaneous path viewers; verify no repeating viewer task.
 18. Integrated >=30-minute soak.
 
-Runtime certification remains separate from source CI and is required before stable promotion.
+Live runtime certification remains separate from source CI and is a post-release deployment follow-up. It does not block GitHub stable source/release closure.

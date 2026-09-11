@@ -1,5 +1,30 @@
 # Changelog
 
+## 3.0.0 — Stable
+
+### Stable closure
+
+- Promotes the accepted Phase 2 / Phase 3 progression and player-UX line to stable `3.0.0`.
+- Preserves SQLite as authoritative rank state and LuckPerms as the managed permission/group projection.
+- Preserves compare-and-set rank transactions, reversible-custody compensation, persistent projection reconciliation and the external-command irreversible boundary.
+- Preserves the Phase 3 `/rank` dashboard, progression tree, readiness/reward/history views and authoritative `/rankup` delegation.
+
+### Final source-audit fix
+
+- Configuration validation now rejects repeated consumable `ITEM` requirements that resolve to the same Bukkit material in one rank.
+- This prevents readiness from independently passing repeated requirements when batched consumption correctly requires their combined quantity.
+- Repeated non-consumable item checks and consumable requirements using different materials remain valid.
+- Added focused regression coverage for the duplicate-consumable-material contract.
+- Made the existing serialized-database metrics test deterministic by asserting final counters after executor drain.
+
+### Release engineering
+
+- Stable artifact: `PlexonRanks-3.0.0.jar` on Java 25 / Paper 26.2 / PlexonCore 2.0.4.
+- Replaced RC-specific publishers with exact-current-`main` stable publication.
+- Build/release verification requires a non-empty all-green test suite, Java class major 69, SQLite packaging, provided-dependency non-shading, exact version metadata, checksum and provenance evidence.
+- Stable publication re-downloads the released JAR/evidence and verifies SHA-256 plus exact source provenance before completion.
+- Live PlexonCraft runtime certification is a post-release operational follow-up and may remain `NOT_EXECUTED` in release provenance.
+
 ## 3.0.0-rc.1 — Phase 2 release candidate
 
 ### Progression product
@@ -27,7 +52,7 @@
 
 - Candidate artifact is `PlexonRanks-3.0.0-rc.1.jar` on Java 25 / Paper 26.2.
 - CI verifies exact test totals, Java class major 69, SQLite packaging, PlexonCore/Vault/LuckPerms/PlaceholderAPI non-shading, whitespace and SHA-256 provenance.
-- The RC remains a GitHub prerelease until the PlexonCraft runtime checklist passes; stable `v3.0.0` is intentionally unpublished.
+- The RC remains a GitHub prerelease until the PlexonCraft runtime checklist passes; stable `v3.0.0` was intentionally unpublished at that historical checkpoint.
 
 ## 2.2.0
 

@@ -1,0 +1,43 @@
+name: Publish PlexonRanks 3.0.0-rc.2 once
+on:
+  push:
+    branches: [phase3/release-v3.0.0-rc.2]
+    paths: ['.github/workflows/publish-phase3-rc.2-once.yml']
+permissions: {contents: write}
+env: {PLUGIN_VERSION: '3.0.0-rc.2'}
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with: {fetch-depth: 0}
+      - name: Prove release-only descendant
+        run: |
+          set -euo pipefail; UX=0e5023c6e838ad064da58cf6ac8c57e06c02c5c7; git merge-base --is-ancestor "$UX" HEAD; git diff --name-only "$UX" HEAD >/tmp/delta
+          if grep -Ev '^(pom\.xml|\.github/workflows/build\.yml|\.github/workflows/publish-phase3-rc\.2-once\.yml|\.release/RELEASE_NOTES_3\.0\.0-rc\.2\.md)$' /tmp/delta | grep -q .; then exit 1; fi
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '25', cache: maven}
+      - name: Provision Core
+        run: |
+          curl -fLsS -o /tmp/core.jar https://github.com/ZpkDxGames/PlexonCore/releases/download/v2.0.4/PlexonCore-2.0.4.jar; echo '61d625a717da9f46ee9231e1970d84b4c317ae12cf4090cdf7c9d39b6a1a9baf  /tmp/core.jar'|sha256sum -c -; mvn -B -ntp org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file -Dfile=/tmp/core.jar -DgroupId=com.zpkdxgames -DartifactId=PlexonCore -Dversion=2.0.4 -Dpackaging=jar -DgeneratePom=true
+      - name: Build exact candidate
+        run: mvn -B -ntp clean verify
+      - name: Evidence
+        run: |
+          set -euo pipefail; test "$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)" = "$PLUGIN_VERSION"; test "$(mvn -q -DforceStdout help:evaluate -Dexpression=paper.version)" = 26.2.build.121-stable
+          JAR="target/PlexonRanks-${PLUGIN_VERSION}.jar"; test -s "$JAR"; jar tf "$JAR" > target/jar-contents.txt; unzip -p "$JAR" plugin.yml | grep -F "version: '${PLUGIN_VERSION}'"; javap -verbose -classpath "$JAR" com.zpkdxgames.plexonranks.PlexonRanksPlugin | grep -F 'major version: 69'
+          for p in 'com/zpkdxgames/plexoncore/' 'net/milkbowl/vault/' 'net/luckperms/' 'me/clip/placeholderapi/' 'org/bukkit/' 'io/papermc/paper/'; do if grep -q "^$p" target/jar-contents.txt; then exit 1; fi; done
+          python3 - <<'PY'
+          import glob,xml.etree.ElementTree as ET,pathlib
+          t=f=e=s=0
+          for p in glob.glob('target/surefire-reports/TEST-*.xml'):
+              r=ET.parse(p).getroot(); t+=int(r.attrib.get('tests',0)); f+=int(r.attrib.get('failures',0)); e+=int(r.attrib.get('errors',0)); s+=int(r.attrib.get('skipped',0))
+          if not t or f or e or s: raise SystemExit(f'{t=} {f=} {e=} {s=}')
+          pathlib.Path('target/TEST_SUMMARY.txt').write_text(f'TEST_COUNT={t} FAILURES={f} ERRORS={e} SKIPPED={s}\n'); print(f'TEST_COUNT={t} FAILURES={f} ERRORS={e} SKIPPED={s}')
+          PY
+          (cd target && sha256sum "PlexonRanks-${PLUGIN_VERSION}.jar" > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt); size=$(stat -c%s "$JAR"); digest=$(sha256sum "$JAR"|awk '{print $1}'); { echo repository=$GITHUB_REPOSITORY; echo commit=$GITHUB_SHA; echo accepted_phase3=0e5023c6e838ad064da58cf6ac8c57e06c02c5c7; echo version=$PLUGIN_VERSION; echo class_major=69; echo paper=26.2.build.121-stable; echo database_schema=2; echo jar_size=$size; echo jar_sha256=$digest; echo runtime_certification=NOT_EXECUTED; } > target/PROVENANCE.txt
+      - name: Publish immutable prerelease
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          set -euo pipefail; TAG=v3.0.0-rc.2; if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then exit 1; fi; if gh release view "$TAG" >/dev/null 2>&1; then exit 1; fi
+          gh release create "$TAG" target/PlexonRanks-3.0.0-rc.2.jar target/SHA256SUMS.txt target/TEST_SUMMARY.txt target/PROVENANCE.txt --target "$GITHUB_SHA" --prerelease --title 'PlexonRanks 3.0.0-rc.2' --notes-file .release/RELEASE_NOTES_3.0.0-rc.2.md

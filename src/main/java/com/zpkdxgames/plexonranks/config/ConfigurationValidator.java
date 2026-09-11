@@ -2,6 +2,7 @@ package com.zpkdxgames.plexonranks.config;
 
 import com.zpkdxgames.plexonranks.model.Rank;
 import com.zpkdxgames.plexonranks.model.RankRegistry;
+import com.zpkdxgames.plexonranks.model.RequirementDefinition;
 import com.zpkdxgames.plexonranks.model.RequirementType;
 import com.zpkdxgames.plexonranks.model.RewardType;
 import com.zpkdxgames.plexonranks.model.ValidationIssue;
@@ -12,6 +13,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -91,6 +93,11 @@ final class ConfigurationValidator {
                     issues.add(error("ranks.yml:ranks." + rank.id() + ".requirements", "Unknown item material " + material + "."));
                 }
             });
+            for (Material duplicate : duplicateConsumableItemMaterials(rank.requirements())) {
+                issues.add(error("ranks.yml:ranks." + rank.id() + ".requirements",
+                        "Consumable item material " + duplicate.name()
+                                + " is configured more than once; combine it into one consumable ITEM requirement."));
+            }
             rank.rewards().forEach(reward -> {
                 if (reward.type() == RewardType.ITEM) {
                     String material = reward.string("material", "");
@@ -120,6 +127,24 @@ final class ConfigurationValidator {
             }
         }
         return issues;
+    }
+
+    static Set<Material> duplicateConsumableItemMaterials(List<RequirementDefinition> requirements) {
+        Set<Material> seen = new HashSet<>();
+        Set<Material> duplicates = new LinkedHashSet<>();
+        for (RequirementDefinition requirement : requirements) {
+            if (requirement.type() != RequirementType.ITEM || !requirement.consume()) {
+                continue;
+            }
+            Material material = Material.matchMaterial(requirement.string("material", ""));
+            if (material == null || material.isAir()) {
+                continue;
+            }
+            if (!seen.add(material)) {
+                duplicates.add(material);
+            }
+        }
+        return Set.copyOf(duplicates);
     }
 
     private void validateSchema(String source, YamlConfiguration yaml, List<ValidationIssue> issues) {

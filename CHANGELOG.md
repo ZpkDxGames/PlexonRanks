@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.0.0-rc.1 — Phase 2 release candidate
+
+### Progression product
+
+- Added the premium `/rank` dashboard with current rank/tier, next rank, readiness, requirement progress, rewards, path, history, statistics, help and maximum-rank states.
+- Added optional `tier` and explicit `next` metadata while preserving deterministic ordered-successor fallback for 2.2.1 ladders.
+- Added strict resolved-graph validation for root/terminal uniqueness, IDs/orders, edges, cycles and reachability.
+
+### Transaction and persistence safety
+
+- Added SQLite schema 2 with a required non-empty pre-3.0 migration backup and asynchronous bounded history.
+- Rank-up uses authoritative compare-and-set persistence, LuckPerms projection reconciliation and compensating rollback before the irreversible command-reward boundary.
+- Item rewards preflight inventory capacity and no longer drop overflow into the world.
+- Administrative set/promote/demote/reset operations now require a 30-second staged confirmation bound to actor, target, exact action/value, expected rank and configuration generation, followed by an authoritative CAS.
+- LuckPerms projection failure prevents silent success and uses CAS compensation; unrelated LuckPerms nodes remain untouched.
+
+### Integration and API
+
+- SQLite remains authoritative; LuckPerms is the managed persistent permission/group projection.
+- Added immutable `RankView`, `RequirementView` and `ProgressionView` API surfaces plus asynchronous history while retaining deprecated 2.x API methods.
+- Added cached PlaceholderAPI compatibility aliases without synchronous SQLite access.
+- Candidate reload validation includes configured LuckPerms group references before snapshot activation.
+
+### Release engineering
+
+- Candidate artifact is `PlexonRanks-3.0.0-rc.1.jar` on Java 25 / Paper 26.2.
+- CI verifies exact test totals, Java class major 69, SQLite packaging, PlexonCore/Vault/LuckPerms/PlaceholderAPI non-shading, whitespace and SHA-256 provenance.
+- The RC remains a GitHub prerelease until the PlexonCraft runtime checklist passes; stable `v3.0.0` is intentionally unpublished.
+
 ## 2.2.0
 
 ### Performance

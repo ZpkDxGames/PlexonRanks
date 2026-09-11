@@ -23,6 +23,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -86,6 +88,17 @@ public final class RankupService {
         }
         lastAttemptNanos.put(uuid, now);
 
+        try {
+            begin(player, settings);
+        } catch (RuntimeException exception) {
+            plugin.getLogger().severe("Rank-up preflight failed for " + player.getName() + ": " + rootMessage(exception));
+            messages.send(player, "rankup.reward-error");
+            processing.remove(uuid);
+        }
+    }
+
+    private void begin(Player player, RuntimeSettings settings) {
+        UUID uuid = player.getUniqueId();
         Rank current = ranks.current(uuid).orElse(configs.current().registry().defaultRank());
         Optional<Rank> next = configs.current().registry().nextAccessible(current, player::hasPermission);
         if (next.isEmpty()) {
@@ -120,11 +133,14 @@ public final class RankupService {
             return;
         }
 
+        Map<String, String> placeholders = render.placeholders(player, current, target, plan.progress(), RankState.NEXT);
+        rewards.preflight(player, target, placeholders);
+
         List<Consumption> consumed;
         try {
             consumed = requirements.consume(player, plan);
         } catch (RuntimeException exception) {
-            plugin.getLogger().warning("Rank-up consumption failed for " + player.getName() + ": " + exception.getMessage());
+            plugin.getLogger().warning("Rank-up consumption failed for " + player.getName() + ": " + rootMessage(exception));
             List<RequirementProgress> refreshed = requirements.evaluate(player, target.requirements());
             messages.send(player, "rankup.requirements-not-met",
                     render.placeholders(player, current, target, refreshed, RankState.NEXT));
@@ -132,26 +148,144 @@ public final class RankupService {
             return;
         }
 
-        List<RequirementProgress> authoritativeProgress = plan.progress();
         String transactionId = UUID.randomUUID().toString();
         database.commitRankup(uuid, current.id(), target.id(), transactionId).whenComplete((committed, error) ->
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     if (error != null || !Boolean.TRUE.equals(committed)) {
-                        requirements.rollback(consumed);
-                        plugin.getLogger().severe("Rank transaction " + transactionId + " failed for " + player.getName()
-                                + ": " + (error == null ? "stale rank state" : rootMessage(error)));
+                        rollbackRequirements(consumed, transactionId);
+                        plugin.getLogger().severe("Rank transaction " + transactionId + " failed before commit for "
+                                + player.getName() + ": " + (error == null ? "stale rank state" : rootMessage(error)));
                         messages.send(player, "generic.database-error");
                         processing.remove(uuid);
                         return;
                     }
                     ranks.acceptCommitted(uuid, target);
-                    Bukkit.getPluginManager().callEvent(new PlexonRankChangeEvent(player, current, target, RankChangeCause.RANKUP));
-                    Map<String, String> placeholders = render.placeholders(player, current, target,
-                            authoritativeProgress, RankState.NEXT);
-                    rewards.execute(player, target, placeholders).whenComplete((ignored, rewardError) ->
-                            Bukkit.getScheduler().runTask(plugin, () -> finish(player, current, target, transactionId,
-                                    placeholders, rewardError)));
+                    reconcileTarget(player, current, target, transactionId, consumed, plan.progress(), placeholders);
                 }));
+    }
+
+    private void reconcileTarget(Player player, Rank current, Rank target, String transactionId,
+                                 List<Consumption> consumed, List<RequirementProgress> progress,
+                                 Map<String, String> placeholders) {
+        rewards.reconcile(player.getUniqueId(), target, configs.current().registry(),
+                configs.current().settings().cumulativePermissions()).whenComplete((ignored, projectionError) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (projectionError != null) {
+                        compensate(player, current, target, transactionId, consumed, null,
+                                "ROLLED_BACK_PROJECTION_FAILURE", projectionError);
+                        return;
+                    }
+                    RewardEngine.ReversibleRewardBatch batch;
+                    try {
+                        batch = rewards.executeReversible(player, target, placeholders);
+                    } catch (RuntimeException rewardError) {
+                        compensate(player, current, target, transactionId, consumed, null,
+                                "ROLLED_BACK_REWARD_FAILURE", rewardError);
+                        return;
+                    }
+                    finalizeExternalBoundary(player, current, target, transactionId, consumed, batch, progress, placeholders);
+                }));
+    }
+
+    private void finalizeExternalBoundary(Player player, Rank current, Rank target, String transactionId,
+                                          List<Consumption> consumed, RewardEngine.ReversibleRewardBatch batch,
+                                          List<RequirementProgress> progress, Map<String, String> placeholders) {
+        Throwable commandError = null;
+        try {
+            rewards.executeCommands(player, target, placeholders);
+        } catch (RuntimeException exception) {
+            commandError = exception;
+        }
+
+        if (commandError != null) {
+            Throwable finalCommandError = commandError;
+            database.markTransactionFailed(transactionId, "EXTERNAL_REWARD_FAILED", rootMessage(commandError))
+                    .whenComplete((ignored, statusError) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                        Throwable reported = statusError == null ? finalCommandError : statusError;
+                        if (statusError != null) {
+                            plugin.getLogger().severe("CRITICAL: could not persist external reward failure for transaction "
+                                    + transactionId + ": " + rootMessage(statusError));
+                        }
+                        finishCommitted(player, current, target, transactionId, placeholders, reported, false);
+                    }));
+            return;
+        }
+
+        database.completeTransaction(transactionId).whenComplete((ignored, statusError) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (statusError != null) {
+                        plugin.getLogger().severe("CRITICAL: rank " + target.id() + " and rewards committed but transaction "
+                                + transactionId + " final status could not be persisted: " + rootMessage(statusError));
+                        finishCommitted(player, current, target, transactionId, placeholders, statusError, false);
+                        return;
+                    }
+                    finishCommitted(player, current, target, transactionId, placeholders, null, true);
+                }));
+    }
+
+    private void compensate(Player player, Rank current, Rank target, String transactionId,
+                            List<Consumption> consumed, RewardEngine.ReversibleRewardBatch batch,
+                            String status, Throwable cause) {
+        UUID uuid = player.getUniqueId();
+        database.rollbackRankup(uuid, target.id(), current.id(), transactionId, status, rootMessage(cause))
+                .whenComplete((rolledBack, databaseError) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (databaseError != null || !Boolean.TRUE.equals(rolledBack)) {
+                        plugin.getLogger().severe("CRITICAL: failed to compensate authoritative rank transaction "
+                                + transactionId + "; target rank remains authoritative: "
+                                + (databaseError == null ? "compare-and-set rejected" : rootMessage(databaseError)));
+                        messages.send(player, "generic.database-error");
+                        processing.remove(uuid);
+                        return;
+                    }
+                    ranks.acceptCommitted(uuid, current);
+                    List<Throwable> rollbackFailures = new ArrayList<>();
+                    if (batch != null) {
+                        try {
+                            batch.rollback();
+                        } catch (RuntimeException failure) {
+                            rollbackFailures.add(failure);
+                        }
+                    }
+                    try {
+                        rollbackRequirementsChecked(consumed);
+                    } catch (RuntimeException failure) {
+                        rollbackFailures.add(failure);
+                    }
+                    rewards.reconcile(uuid, current, configs.current().registry(),
+                                    configs.current().settings().cumulativePermissions())
+                            .whenComplete((ignored, projectionRollbackError) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                                if (projectionRollbackError != null) rollbackFailures.add(projectionRollbackError);
+                                if (!rollbackFailures.isEmpty()) {
+                                    plugin.getLogger().severe("CRITICAL: rank transaction " + transactionId
+                                            + " restored authoritative rank but one or more custody/projection rollbacks failed: "
+                                            + rootMessage(rollbackFailures.getFirst()));
+                                    messages.send(player, "generic.database-error");
+                                } else {
+                                    plugin.getLogger().warning("Rank transaction " + transactionId + " was safely rolled back: "
+                                            + rootMessage(cause));
+                                    messages.send(player, "rankup.reward-error");
+                                }
+                                processing.remove(uuid);
+                            }));
+                }));
+    }
+
+    private void finishCommitted(Player player, Rank from, Rank to, String transactionId,
+                                 Map<String, String> placeholders, Throwable completionError, boolean fullSuccess) {
+        try {
+            Bukkit.getPluginManager().callEvent(new PlexonRankChangeEvent(player, from, to, RankChangeCause.RANKUP));
+            if (fullSuccess) {
+                feedback(player, to, placeholders);
+            } else {
+                plugin.getLogger().severe("Rank transaction " + transactionId
+                        + " crossed the irreversible/committed boundary with a reported failure: "
+                        + rootMessage(completionError));
+                messages.send(player, "rankup.reward-error");
+            }
+            Bukkit.getPluginManager().callEvent(new PlexonRankupEvent(player, from, to, transactionId));
+        } finally {
+            processing.remove(player.getUniqueId());
+        }
     }
 
     public boolean processing(UUID uuid) {
@@ -163,22 +297,28 @@ public final class RankupService {
         lastAttemptNanos.remove(uuid);
     }
 
-    private void finish(Player player, Rank from, Rank to, String transactionId,
-                        Map<String, String> placeholders, Throwable rewardError) {
+    private void rollbackRequirements(List<Consumption> consumed, String transactionId) {
         try {
-            if (rewardError != null) {
-                plugin.getLogger().severe("Reward execution failed after saved rank transaction " + transactionId
-                        + " for " + player.getName() + ": " + rootMessage(rewardError));
-                database.markTransactionFailed(transactionId, "REWARD_FAILED");
-                messages.send(player, "rankup.reward-error");
-            } else {
-                database.completeTransaction(transactionId);
-            }
-            feedback(player, to, placeholders);
-            Bukkit.getPluginManager().callEvent(new PlexonRankupEvent(player, from, to, transactionId));
-        } finally {
-            processing.remove(player.getUniqueId());
+            rollbackRequirementsChecked(consumed);
+        } catch (RuntimeException rollbackFailure) {
+            plugin.getLogger().severe("CRITICAL: requirement refund failed for uncommitted transaction " + transactionId
+                    + ": " + rootMessage(rollbackFailure));
         }
+    }
+
+    private static void rollbackRequirementsChecked(List<Consumption> consumed) {
+        List<Consumption> reversed = new ArrayList<>(consumed);
+        Collections.reverse(reversed);
+        RuntimeException combined = null;
+        for (Consumption consumption : reversed) {
+            try {
+                consumption.rollback().run();
+            } catch (RuntimeException failure) {
+                if (combined == null) combined = new IllegalStateException("One or more requirement refunds failed");
+                combined.addSuppressed(failure);
+            }
+        }
+        if (combined != null) throw combined;
     }
 
     private void feedback(Player player, Rank rank, Map<String, String> placeholders) {
@@ -207,9 +347,7 @@ public final class RankupService {
     }
 
     private void playConfiguredSound(Player player, RuntimeSettings.SoundDescriptor descriptor) {
-        if (descriptor.sound().isBlank()) {
-            return;
-        }
+        if (descriptor.sound().isBlank()) return;
         String sound = descriptor.sound();
         try {
             player.playSound(player.getLocation(), sound.toLowerCase().contains(":") ? sound.toLowerCase()
@@ -220,6 +358,7 @@ public final class RankupService {
     }
 
     private static String rootMessage(Throwable throwable) {
+        if (throwable == null) return "unknown failure";
         Throwable root = throwable;
         while (root.getCause() != null) root = root.getCause();
         return root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage();

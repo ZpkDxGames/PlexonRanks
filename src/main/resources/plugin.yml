@@ -4,7 +4,7 @@ main: com.zpkdxgames.plexonranks.PlexonRanksPlugin
 api-version: '26.2'
 author: Tonim (ZpkDxGames)
 website: https://github.com/ZpkDxGames/PlexonRanks
-description: Flexible rank progression for PlexonCraft and the Plexon plugin family.
+description: Premium rank progression for PlexonCraft and the Plexon plugin family.
 depend:
   - Vault
   - LuckPerms
@@ -14,19 +14,19 @@ softdepend:
   - DiscordSRV
 commands:
   rank:
-    description: View your current rank and progress.
-    usage: /rank [info|menu]
+    description: Open your premium rank dashboard or text progress report.
+    usage: /rank [info|menu|path]
     permission: plexonranks.rank
   ranks:
-    description: Open the PlexonRanks progression menu.
+    description: Open the PlexonRanks progression path.
     usage: /ranks [page]
     permission: plexonranks.ranks
   rankup:
-    description: Advance to the next configured rank.
+    description: Attempt an atomic promotion to the next configured rank.
     usage: /rankup
     permission: plexonranks.rankup
   plexonranks:
-    description: PlexonRanks administration and diagnostics command.
+    description: PlexonRanks administration, history, validation and diagnostics.
     usage: /plexonranks help
     aliases: [pranks]
 permissions:
@@ -50,6 +50,7 @@ permissions:
       plexonranks.admin.reload: true
       plexonranks.admin.editor: true
       plexonranks.admin.info: true
+      plexonranks.admin.history: true
       plexonranks.admin.diagnostics: true
       plexonranks.admin.setrank: true
       plexonranks.admin.reset: true
@@ -63,6 +64,8 @@ permissions:
   plexonranks.admin.editor:
     default: op
   plexonranks.admin.info:
+    default: op
+  plexonranks.admin.history:
     default: op
   plexonranks.admin.diagnostics:
     default: op

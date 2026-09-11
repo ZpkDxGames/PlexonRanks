@@ -58,6 +58,16 @@ final class RankParser {
             if (defaultRank) {
                 defaults++;
             }
+            String tier = section.getString("tier", "Progression").trim();
+            if (tier.isBlank()) {
+                issues.add(error(path + ".tier", "Tier/category cannot be blank."));
+                tier = "Progression";
+            }
+            String next = section.getString("next", "").trim();
+            if (!next.isBlank() && !VALID_ID.matcher(next).matches()) {
+                issues.add(error(path + ".next", "Next-rank ID must match " + VALID_ID.pattern() + "."));
+            }
+
             ConfigurationSection displaySection = section.getConfigurationSection("display");
             String displayName = displaySection == null ? id : displaySection.getString("name", id);
             String shortName = displaySection == null ? id : displaySection.getString("short-name", id);
@@ -80,6 +90,8 @@ final class RankParser {
             ranks.add(new Rank(
                     id,
                     order,
+                    tier,
+                    next,
                     section.getBoolean("enabled", true),
                     section.getBoolean("visible", true),
                     defaultRank,
@@ -92,7 +104,7 @@ final class RankParser {
             ));
         }
         if (defaults == 0) {
-            issues.add(warning("ranks.yml", "No default rank is marked; the lowest enabled order will be used."));
+            issues.add(error("ranks.yml", "Exactly one enabled default/root rank must be marked with default: true."));
         } else if (defaults > 1) {
             issues.add(error("ranks.yml", "Exactly one rank may be marked default."));
         }
@@ -187,10 +199,15 @@ final class RankParser {
             if (permissions.stream().anyMatch(String::isBlank)) {
                 issues.add(error(path + ".rewards[" + index + "]", "Permission rewards cannot contain blank permissions."));
             }
+            boolean persistent = booleanValue(map.get("persistent"), type == RewardType.PERMISSION || type == RewardType.LUCKPERMS_GROUP);
+            if ((type == RewardType.PERMISSION || type == RewardType.LUCKPERMS_GROUP) && !persistent) {
+                issues.add(error(path + ".rewards[" + index + "]",
+                        type + " rewards must be persistent in 3.0 so LuckPerms projection can be reconciled safely."));
+            }
             result.add(new RewardDefinition(
                     type,
                     booleanValue(map.get("one-time"), type != RewardType.PERMISSION && type != RewardType.LUCKPERMS_GROUP),
-                    booleanValue(map.get("persistent"), type == RewardType.PERMISSION || type == RewardType.LUCKPERMS_GROUP),
+                    persistent,
                     commands,
                     permissions,
                     display,

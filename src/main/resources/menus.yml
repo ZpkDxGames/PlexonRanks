@@ -1,9 +1,11 @@
-# PlexonRanks 2.0 — player and administration inventories
+# PlexonRanks 3.0 — player and administration inventories
 schema-version: 2
 
 rank-list:
   title: "<gradient:#4158D0:#C850C0><bold>Plexon Ranks</bold></gradient> <dark_gray>•</dark_gray> <gray>%page%/%pages%</gray>"
   size: 54
+  # Retained for configuration compatibility. Phase 3 progression views refresh on
+  # meaningful player/menu actions rather than a repeating redraw loop.
   refresh:
     enabled: true
     interval-ticks: 60
@@ -17,7 +19,7 @@ rank-list:
     lore:
       - "<!italic><dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</dark_gray>"
       - "<!italic>%status_icon% %status%"
-      - "<!italic><dark_gray>Rank #%rank_order% <gray>•</gray> %rank_id%</dark_gray>"
+      - "<!italic><dark_gray>Progression position #%rank_order%</dark_gray>"
       - ""
       - "%description%"
       - ""
@@ -48,17 +50,16 @@ rank-list:
       material: LIGHT_BLUE_STAINED_GLASS_PANE
       glow: true
       icon: "<aqua>◆</aqua>"
-      status: "<aqua><bold>CURRENT</bold></aqua>"
+      status: "<aqua><bold>CURRENT RANK</bold></aqua>"
       lore:
         - "<!italic><aqua>You are currently at this rank.</aqua>"
     next:
       material: YELLOW_STAINED_GLASS_PANE
       glow: true
       icon: "<yellow>➜</yellow>"
-      status: "<yellow><bold>NEXT</bold></yellow>"
+      status: "<yellow><bold>NEXT RANK</bold></yellow>"
       lore:
-        - "<!italic><yellow><bold>RIGHT-CLICK</bold></yellow> <gray>to attempt this rank.</gray>"
-        - "<!italic><dark_gray>Use /rank for a complete progress report.</dark_gray>"
+        - "<!italic><gray>Select this rank for details and the explicit next action.</gray>"
     locked:
       material: RED_STAINED_GLASS_PANE
       glow: false
@@ -70,7 +71,7 @@ rank-list:
       material: NETHER_STAR
       glow: true
       icon: "<gradient:#FFE98A:#FFB84D>★</gradient>"
-      status: "<gradient:#FFE98A:#FFB84D><bold>MAX RANK</bold></gradient>"
+      status: "<gradient:#FFE98A:#FFB84D><bold>MAXIMUM RANK • MASTERED</bold></gradient>"
       lore:
         - "<!italic><gradient:#FFE98A:#FFB84D>You completed the entire progression!</gradient>"
 
@@ -79,6 +80,8 @@ rank-list:
     material: GRAY_STAINED_GLASS_PANE
     name: " "
 
+  # Legacy keys remain parseable. Phase 3 uses the same bottom-row convention with
+  # a Refresh control, Dashboard, explicit primary action, status, Close and paging.
   navigation:
     previous:
       slot: 45
@@ -90,14 +93,12 @@ rank-list:
       slot: 48
       material: EXPERIENCE_BOTTLE
       glow: true
-      name: "<!italic><gradient:#4158D0:#C850C0><bold>Your Progress</bold></gradient>"
+      name: "<!italic><gradient:#4158D0:#C850C0><bold>Rank Dashboard</bold></gradient>"
       lore:
         - "<!italic><gray>Current</gray> <dark_gray>›</dark_gray> %player_rank%"
         - "<!italic><gray>Next</gray> <dark_gray>›</dark_gray> %next_rank%"
-        - ""
-        - "<!italic>%progress_bar% <white>%progress_percent%%</white>"
     close:
-      slot: 49
+      slot: 52
       material: BARRIER
       name: "<!italic><red>Close Menu</red>"
       lore:

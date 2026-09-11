@@ -1,6 +1,7 @@
 package com.zpkdxgames.plexonranks.command;
 
 import com.zpkdxgames.plexonranks.config.ConfigManager;
+import com.zpkdxgames.plexonranks.menu.RankDashboardMenu;
 import com.zpkdxgames.plexonranks.menu.RankListMenu;
 import com.zpkdxgames.plexonranks.model.Rank;
 import com.zpkdxgames.plexonranks.model.RankState;
@@ -25,15 +26,23 @@ public final class RankCommand implements CommandExecutor, TabCompleter {
     private final RankService ranks;
     private final RenderService render;
     private final MessageService messages;
-    private final RankListMenu menu;
+    private final RankListMenu pathMenu;
+    private final RankDashboardMenu dashboard;
 
     public RankCommand(ConfigManager configs, RankService ranks, RenderService render,
-                       MessageService messages, RankListMenu menu) {
+                       MessageService messages, RankListMenu pathMenu, RankDashboardMenu dashboard) {
         this.configs = configs;
         this.ranks = ranks;
         this.render = render;
         this.messages = messages;
-        this.menu = menu;
+        this.pathMenu = pathMenu;
+        this.dashboard = dashboard;
+    }
+
+    /** 2.x compatibility constructor used by integrations/tests. */
+    public RankCommand(ConfigManager configs, RankService ranks, RenderService render,
+                       MessageService messages, RankListMenu pathMenu) {
+        this(configs, ranks, render, messages, pathMenu, null);
     }
 
     @Override
@@ -43,11 +52,20 @@ public final class RankCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "generic.players-only");
             return true;
         }
-        if (args.length > 0 && args[0].equalsIgnoreCase("menu")) {
-            menu.open(player, 1);
+        if (args.length == 0) {
+            if (dashboard != null) dashboard.open(player); else show(player);
             return true;
         }
-        show(player);
+        switch (args[0].toLowerCase()) {
+            case "info" -> show(player);
+            case "menu" -> { if (dashboard != null) dashboard.open(player); else pathMenu.open(player, 1); }
+            case "path" -> pathMenu.open(player, 1);
+            case "requirements" -> { if (dashboard != null) dashboard.openRequirements(player); else show(player); }
+            case "rewards" -> { if (dashboard != null) dashboard.openRewards(player); else show(player); }
+            case "history" -> { if (dashboard != null) dashboard.openHistory(player); else show(player); }
+            case "help" -> { if (dashboard != null) dashboard.openHelp(player); else show(player); }
+            default -> { if (dashboard != null) dashboard.open(player); else show(player); }
+        }
         return true;
     }
 
@@ -73,7 +91,7 @@ public final class RankCommand implements CommandExecutor, TabCompleter {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                  @NotNull String alias, @NotNull String[] args) {
-        return args.length == 1 ? List.of("info", "menu").stream()
+        return args.length == 1 ? List.of("info", "menu", "path", "requirements", "rewards", "history", "help").stream()
                 .filter(value -> value.startsWith(args[0].toLowerCase())).toList() : List.of();
     }
 }

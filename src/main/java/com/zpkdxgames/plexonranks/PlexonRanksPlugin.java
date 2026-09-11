@@ -20,8 +20,10 @@ import com.zpkdxgames.plexonranks.integration.core.CoreBridgeFactory;
 import com.zpkdxgames.plexonranks.listener.PlayerDataListener;
 import com.zpkdxgames.plexonranks.menu.AdminRankMenu;
 import com.zpkdxgames.plexonranks.menu.ChatInputManager;
+import com.zpkdxgames.plexonranks.menu.RankDashboardMenu;
 import com.zpkdxgames.plexonranks.menu.RankListMenu;
 import com.zpkdxgames.plexonranks.model.RequirementType;
+import com.zpkdxgames.plexonranks.model.ValidationIssue;
 import com.zpkdxgames.plexonranks.requirement.RequirementEngine;
 import com.zpkdxgames.plexonranks.reward.RewardEngine;
 import com.zpkdxgames.plexonranks.service.BackupService;
@@ -74,9 +76,7 @@ public final class PlexonRanksPlugin extends JavaPlugin {
 
             boolean placeholderEnabled = settings.placeholderApiEnabled();
             placeholders = new PlaceholderHook(this, placeholderEnabled);
-            if (placeholderEnabled) {
-                auditCoreProviderHint("PLACEHOLDERAPI", placeholders.connected());
-            }
+            if (placeholderEnabled) auditCoreProviderHint("PLACEHOLDERAPI", placeholders.connected());
             boolean placeholderRequirements = configs.current().registry().all().stream()
                     .flatMap(rank -> rank.requirements().stream())
                     .anyMatch(requirement -> requirement.type() == RequirementType.PLACEHOLDER);
@@ -89,17 +89,21 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             RequirementEngine requirements = new RequirementEngine(vault, placeholders);
             RewardEngine rewards = new RewardEngine(this, vault, luckPerms, configs::formatter);
             rewards.compilePersistentGrantPlans(configs.current().registry());
+            List<String> integrationFailures = rewards.validateIntegrations(configs.current().registry());
+            if (!integrationFailures.isEmpty()) {
+                throw new IllegalStateException("Invalid rank integrations: " + String.join("; ", integrationFailures));
+            }
+            configs.onCandidateValidation(snapshot -> rewards.validateIntegrations(snapshot.registry()).stream()
+                    .map(message -> new ValidationIssue(ValidationIssue.Severity.ERROR, "LuckPerms", message))
+                    .toList());
+
             MessageService messages = new MessageService(configs);
             ranks = new RankService(this, configs, database, rewards);
             configs.onReload(() -> {
                 rewards.compilePersistentGrantPlans(configs.current().registry());
                 ranks.repairCachedRanks();
-                if (expansion != null) {
-                    expansion.clearCaches();
-                }
-                if (rankListMenu != null) {
-                    rankListMenu.reload();
-                }
+                if (expansion != null) expansion.clearCaches();
+                if (rankListMenu != null) rankListMenu.reload();
                 publishCoreHealth();
             });
             RenderService render = new RenderService(configs, requirements);
@@ -107,11 +111,12 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             BackupService backups = new BackupService(this, configs, database);
 
             rankListMenu = new RankListMenu(this, configs, ranks, rankup, render);
+            RankDashboardMenu dashboard = new RankDashboardMenu(this, configs, ranks, rankup, render, messages, rankListMenu);
             ChatInputManager chatInput = new ChatInputManager(this, messages);
             RankConfigEditor configEditor = new RankConfigEditor(this, configs);
             AdminRankMenu adminMenu = new AdminRankMenu(this, configs, configEditor, chatInput, messages, render);
 
-            RankCommand rankCommand = new RankCommand(configs, ranks, render, messages, rankListMenu);
+            RankCommand rankCommand = new RankCommand(configs, ranks, render, messages, rankListMenu, dashboard);
             command("rank").setExecutor(rankCommand);
             command("rank").setTabCompleter(rankCommand);
             command("ranks").setExecutor(new RanksCommand(rankListMenu, messages));
@@ -123,12 +128,11 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             command("plexonranks").setTabCompleter(adminCommand);
 
             Bukkit.getPluginManager().registerEvents(rankListMenu, this);
+            Bukkit.getPluginManager().registerEvents(dashboard, this);
             Bukkit.getPluginManager().registerEvents(chatInput, this);
             Bukkit.getPluginManager().registerEvents(adminMenu, this);
             Bukkit.getPluginManager().registerEvents(new PlayerDataListener(this, configs, ranks, rankup, uuid -> {
-                if (expansion != null) {
-                    expansion.invalidate(uuid);
-                }
+                if (expansion != null) expansion.invalidate(uuid);
             }), this);
 
             api = new PlexonRanksApiImpl(configs, ranks, requirements);
@@ -145,19 +149,14 @@ public final class PlexonRanksPlugin extends JavaPlugin {
             publishCoreHealth();
             startupSummary();
         } catch (Exception exception) {
-            if (core != null) {
-                core.markFailed("Rank startup failed: " + exception.getClass().getSimpleName());
-            }
+            if (core != null) core.markFailed("Rank startup failed: " + exception.getClass().getSimpleName());
             getLogger().log(Level.SEVERE, "PlexonRanks could not start safely; disabling without partial operation", exception);
             shutdown();
             Bukkit.getPluginManager().disablePlugin(this);
         }
     }
 
-    @Override
-    public void onDisable() {
-        shutdown();
-    }
+    @Override public void onDisable() { shutdown(); }
 
     private void shutdown() {
         if (rankListMenu != null) {
@@ -204,41 +203,31 @@ public final class PlexonRanksPlugin extends JavaPlugin {
 
     private void publishCoreHealth() {
         if (core == null) return;
-
         RuntimeSettings settings = configs.current().settings();
         List<String> degraded = new ArrayList<>();
-        if (settings.placeholderApiEnabled() && !placeholders.connected()) {
-            degraded.add("PlaceholderAPI enabled but unavailable");
-        }
-        if (settings.discordSrvEnabled() && !discord.connected()) {
-            degraded.add("DiscordSRV enabled but unavailable");
-        }
-
-        String readyDetail = "Rank engine ready; " + configs.current().registry().ordered().size() + " ranks loaded";
-        if (degraded.isEmpty()) {
-            core.markReady(readyDetail);
-        } else {
-            core.markDegraded(readyDetail + "; " + String.join(", ", degraded));
-        }
+        if (settings.placeholderApiEnabled() && !placeholders.connected()) degraded.add("PlaceholderAPI enabled but unavailable");
+        if (settings.discordSrvEnabled() && !discord.connected()) degraded.add("DiscordSRV enabled but unavailable");
+        String readyDetail = "Rank engine ready; " + configs.current().registry().ordered().size()
+                + " ranks loaded; SQLite schema " + database.schemaVersion();
+        if (degraded.isEmpty()) core.markReady(readyDetail); else core.markDegraded(readyDetail + "; " + String.join(", ", degraded));
     }
 
     private void startupSummary() {
         RuntimeSettings settings = configs.current().settings();
         getLogger().info("PlexonRanks " + getPluginMeta().getVersion());
         getLogger().info(" • Ranks: " + configs.current().registry().ordered().size());
-        getLogger().info(" • Storage: SQLite (queue " + database.queueCapacity() + ")");
+        getLogger().info(" • Progression: " + configs.current().registry().defaultRank().id() + " -> "
+                + configs.current().registry().terminalRank().id());
+        getLogger().info(" • Storage: SQLite schema " + database.schemaVersion() + " (queue " + database.queueCapacity() + ")");
+        if (database.migrationBackup() != null) getLogger().info(" • Migration backup: " + database.migrationBackup().getFileName());
         getLogger().info(" • Vault: " + status(vault.connected()));
         getLogger().info(" • LuckPerms: " + status(luckPerms.connected()));
         getLogger().info(" • PlaceholderAPI: " + status(placeholders.connected()));
         getLogger().info(" • DiscordSRV: " + (discord.connected() ? "CONNECTED" : "DISABLED"));
-        getLogger().info(" • PlexonCore: " + (core.installed()
-                ? core.mode() + " API " + core.apiVersion()
-                : "STANDALONE"));
+        getLogger().info(" • PlexonCore: " + (core.installed() ? core.mode() + " API " + core.apiVersion() : "STANDALONE"));
         getLogger().info(" • Module: " + core.registrationState());
         getLogger().info(" • MiniMessage: " + (settings.miniMessage() ? "ENABLED" : "DISABLED"));
     }
 
-    private static String status(boolean connected) {
-        return connected ? "CONNECTED" : "UNAVAILABLE";
-    }
+    private static String status(boolean connected) { return connected ? "CONNECTED" : "UNAVAILABLE"; }
 }

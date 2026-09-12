@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.0.2 — PlexonFamily permission alignment
+
+### Family-owned rank rewards
+
+- Replaced Essentials utility permissions with active PlexonUtility nodes for `/workbench`, `/trash`, `/enderchest`, and `/feed`.
+- Replaced Essentials `/back` and `/back`-after-death grants with `plexontravel.back`; PlexonTravel owns persisted back history and death capture.
+- Replaced Essentials/VentureChat colored-chat grants with `plexonchats.formatting`.
+- Preserved the PlexonHomes numeric home-limit ladder because PlexonHomes, not PlexonUtility, remains the authoritative home-limit owner.
+- Preserved unrelated Essentials rewards that do not yet have a PlexonFamily replacement.
+
+### Validation
+
+- Added regression coverage that rejects retired Essentials/VentureChat nodes while requiring the exact PlexonFamily replacement nodes.
+- Updated the PlexonHomes contract test so `/back` is no longer treated as an intentionally retained Essentials permission.
+
 ## 3.0.1 — PlexonHomes permission migration
 
 ### Home capacity contract

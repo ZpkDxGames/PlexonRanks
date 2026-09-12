@@ -113,7 +113,7 @@ ranks:
       - rank.2
       - essentials.head
       - iDisguise.disguise.cat
-      - essentials.workbench
+      - plexonutility.workbench
       display: []
     announce: true
     menu:
@@ -190,16 +190,14 @@ ranks:
       - adjustbonusclaimblocks %player% 4000
       display:
       - '&8• &a+4,000 &7Claim Blocks'
-      - '&8• &bColored Chat'
+      - '&8• &bChat Formatting'
       - '&8• &dDisguise &8▸ &fPig'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.4
       - iDisguise.disguise.pig
-      - essentials.chat.color
-      - venturechat.color
-      - venturechat.color.legacy
+      - plexonchats.formatting
       display: []
     announce: true
     menu:
@@ -237,13 +235,13 @@ ranks:
       - '&8• &a+5,000 &7Claim Blocks'
       - '&8• &f2× Basic Keys'
       - '&8• &dDisguise &8▸ &fCow'
-      - '&8• &e/disposal &7command'
+      - '&8• &e/trash &7command'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.5
       - iDisguise.disguise.cow
-      - essentials.disposal
+      - plexonutility.trash
       display: []
     announce: true
     menu:
@@ -369,7 +367,7 @@ ranks:
       permissions:
       - rank.8
       - iDisguise.disguise.rabbit
-      - essentials.enderchest
+      - plexonutility.enderchest
       display: []
     announce: true
     menu:
@@ -667,7 +665,7 @@ ranks:
       permissions:
       - rank.15
       - iDisguise.disguise.bat
-      - essentials.back
+      - plexontravel.back
       display: []
     announce: true
     menu:
@@ -885,7 +883,7 @@ ranks:
       permissions:
       - rank.20
       - iDisguise.disguise.armadillo
-      - essentials.back.ondeath
+      - plexontravel.back
       display: []
     announce: true
     menu:
@@ -1305,7 +1303,7 @@ ranks:
       permissions:
       - rank.30
       - iDisguise.disguise.cave_spider
-      - essentials.feed
+      - plexonutility.feed
       display: []
     announce: true
     menu:

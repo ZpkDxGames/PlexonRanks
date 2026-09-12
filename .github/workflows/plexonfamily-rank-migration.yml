@@ -17,7 +17,9 @@ jobs:
           fetch-depth: 0
           ref: migration/plexonfamily-rank-permissions-3.0.2
       - name: Apply migration
-        run: python3 .github/scripts/plexonfamily_rank_migration.py
+        run: |
+          sed -i '/^actual_essentials = /,+2d' .github/scripts/plexonfamily_rank_migration.py
+          python3 .github/scripts/plexonfamily_rank_migration.py
       - name: Commit migration
         run: |
           set -euo pipefail

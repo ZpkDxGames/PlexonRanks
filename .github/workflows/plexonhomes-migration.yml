@@ -1,0 +1,294 @@
+name: PlexonHomes Permission Migration Builder
+
+on:
+  push:
+    branches: [migration/plexonhomes-permissions-3.0.1]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: migration/plexonhomes-permissions-3.0.1
+
+      - name: Apply authoritative PlexonHomes permission contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          ranks_path = Path('src/main/resources/ranks.yml')
+          ranks = ranks_path.read_text()
+
+          if 'essentials.sethome.multiple' in ranks:
+              raise SystemExit('Current main unexpectedly still contains legacy Essentials home-limit grants')
+          if 'plexonhomes.limit.' in ranks:
+              raise SystemExit('PlexonHomes limit grants already exist; refusing ambiguous rewrite')
+
+          header = (
+              "# Rank-based home capacity is owned by PlexonRanks through PlexonHomes permissions.\n"
+              "# With cumulative permissions enabled, lower owned numeric limits intentionally remain\n"
+              "# effective; PlexonHomes resolves the highest numeric plexonhomes.limit.<N> value.\n"
+              "# Progression: base=5, Newbie=8, Tinkerer=12, Technician=16, Inventor=20, Skilled=24, PRO=30.\n"
+          )
+          anchor = "# is rendered through the MiniMessage-first 2.0 component pipeline.\n"
+          if ranks.count(anchor) != 1:
+              raise SystemExit('Unexpected ranks.yml header shape')
+          ranks = ranks.replace(anchor, anchor + header, 1)
+
+          base_old = "    requirements: []\n    rewards: []\n    announce: false\n"
+          base_new = (
+              "    requirements: []\n"
+              "    rewards:\n"
+              "    - type: PERMISSION\n"
+              "      persistent: true\n"
+              "      permissions:\n"
+              "      - plexonhomes.limit.5\n"
+              "      display: []\n"
+              "    announce: false\n"
+          )
+          if ranks.count(base_old) != 1:
+              raise SystemExit('Unexpected unranked reward shape')
+          ranks = ranks.replace(base_old, base_new, 1)
+
+          milestones = [
+              ('1', '8', '1,000', 'iDisguise.disguise.player'),
+              ('11', '12', '11,000', 'iDisguise.disguise.pufferfish'),
+              ('16', '16', '16,000', 'iDisguise.disguise.fox'),
+              ('21', '20', '21,000', 'iDisguise.disguise.turtle'),
+              ('26', '24', '26,000', 'iDisguise.disguise.strider'),
+              ('31', '30', '31,000', 'iDisguise.disguise.creeper'),
+          ]
+          for rank_number, limit, claim_blocks, next_permission in milestones:
+              display_old = f"      - '&8• &a+{claim_blocks} &7Claim Blocks'\n"
+              display_new = display_old + f"      - '&8• &a{limit} &7homes'\n"
+              if ranks.count(display_old) != 1:
+                  raise SystemExit(f'Unexpected display anchor for rank {rank_number}')
+              ranks = ranks.replace(display_old, display_new, 1)
+
+              permission_old = f"      - rank.{rank_number}\n      - {next_permission}\n"
+              permission_new = (
+                  f"      - rank.{rank_number}\n"
+                  f"      - plexonhomes.limit.{limit}\n"
+                  f"      - {next_permission}\n"
+              )
+              if ranks.count(permission_old) != 1:
+                  raise SystemExit(f'Unexpected permission anchor for rank {rank_number}')
+              ranks = ranks.replace(permission_old, permission_new, 1)
+
+          expected = ['5', '8', '12', '16', '20', '24', '30']
+          found = re.findall(r'(?m)^\s*- plexonhomes\.limit\.(\d+)\s*$', ranks)
+          if found != expected:
+              raise SystemExit(f'Unexpected PlexonHomes limit ladder: {found}')
+          if 'plexonhomes.limit.unlimited' in ranks:
+              raise SystemExit('No source progression tier is unlimited; do not invent one')
+          ranks_path.write_text(ranks)
+
+          pom_path = Path('pom.xml')
+          pom = pom_path.read_text()
+          old = '<artifactId>PlexonRanks</artifactId><version>3.0.0</version>'
+          new = '<artifactId>PlexonRanks</artifactId><version>3.0.1</version>'
+          if pom.count(old) != 1:
+              raise SystemExit('Unexpected pom version boundary')
+          pom_path.write_text(pom.replace(old, new, 1))
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text()
+          heading = '# Changelog\n\n'
+          entry = '''## 3.0.1 — PlexonHomes permission migration
+
+### Home capacity contract
+
+- Restored the intended 5/8/12/16/20/24/30 home progression through `plexonhomes.limit.<N>` grants.
+- The base/unranked rank owns `plexonhomes.limit.5`; Newbie I, Tinkerer I, Technician I, Inventor I, Skilled I and PRO I raise the cap to 8, 12, 16, 20, 24 and 30 respectively.
+- Removed Essentials/EssentialsX from the home-capacity ownership boundary. No active rank grant uses `essentials.sethome.multiple*`.
+- No unlimited tier was introduced because the authoritative progression tops out at 30 homes.
+- Ordinary PlexonHomes action and GUI permissions remain owned by PlexonHomes and are default-true; PlexonRanks does not duplicate them.
+
+### Permission safety
+
+- LuckPerms remains the effective permission authority and PlexonRanks continues using its existing managed persistent-grant reconciliation.
+- With cumulative permissions enabled, lower PlexonRanks-owned numeric limits may remain present; PlexonHomes resolves the highest effective numeric limit.
+- Unrelated Essentials permissions used by other rank rewards remain unchanged.
+- Added a bundled contract regression test and operator migration documentation.
+
+'''
+          if not changelog.startswith(heading):
+              raise SystemExit('Unexpected CHANGELOG header')
+          changelog_path.write_text(heading + entry + changelog[len(heading):])
+
+          docs = Path('docs/MIGRATION_PLEXONHOMES_PERMISSIONS.md')
+          docs.write_text('''# PlexonHomes permission migration — PlexonRanks 3.0.1
+
+PlexonRanks owns **which** home-capacity permission a progression rank receives. PlexonHomes owns **what** that permission means. LuckPerms remains the effective permission authority.
+
+## Authoritative PlexonHomes contract
+
+PlexonHomes 2.0.0 evaluates numeric `plexonhomes.limit.<N>` nodes and uses the highest effective numeric value. `plexonhomes.limit.unlimited` overrides numeric limits. If neither is present, PlexonHomes uses its own configured default.
+
+The ordinary action nodes are `plexonhomes.sethome`, `plexonhomes.use`, `plexonhomes.delete`, `plexonhomes.rename`, and `plexonhomes.gui`. PlexonHomes declares those nodes default-true, so PlexonRanks does not redundantly grant them.
+
+## Rank-by-rank migration
+
+| Progression point | Legacy Essentials contract | PlexonHomes contract | Action |
+| --- | --- | --- | --- |
+| Base / Unranked | `essentials.sethome.multiple` with Essentials default 5 | `plexonhomes.limit.5` | move base ownership into PlexonRanks |
+| Newbie I | `essentials.sethome.multiple.newbie` = 8 | `plexonhomes.limit.8` | replace |
+| Tinkerer I | `essentials.sethome.multiple.tinkerer` = 12 | `plexonhomes.limit.12` | replace |
+| Technician I | `essentials.sethome.multiple.technician` = 16 | `plexonhomes.limit.16` | replace |
+| Inventor I | `essentials.sethome.multiple.inventor` = 20 | `plexonhomes.limit.20` | replace |
+| Skilled I | `essentials.sethome.multiple.skilled` = 24 | `plexonhomes.limit.24` | replace |
+| PRO I | `essentials.sethome.multiple.pro` = 30 | `plexonhomes.limit.30` | replace |
+
+There is no authoritative unlimited progression tier, so `plexonhomes.limit.unlimited` is not granted by the bundled rank ladder.
+
+## Cumulative permission behavior
+
+The default PlexonRanks configuration uses cumulative permission rewards. A PRO player can therefore retain lower PlexonRanks-owned nodes such as 5, 8, 12, 16, 20 and 24 alongside 30. This is intentional: PlexonHomes deterministically selects the highest effective numeric limit. PlexonRanks does not add a second home-limit calculator or an aggressive node-cleanup subsystem.
+
+PlexonRanks reconciliation only manages grants declared by its rank definitions. Staff, donor, manually assigned, inherited, or other-plugin permissions remain outside this ownership boundary.
+
+## Operator cleanup after upgrade
+
+After deploying PlexonRanks 3.0.1 with PlexonHomes 2.0.0 or newer, verify representative players with LuckPerms, then remove the obsolete Essentials home-limit grants from groups that previously supplied them. In particular, the old default `essentials.sethome.multiple` grant and the `.newbie`, `.tinkerer`, `.technician`, `.inventor`, `.skilled`, and `.pro` tiers are no longer required for home capacity.
+
+Do not remove unrelated Essentials permissions that still back independent rank rewards.
+
+Existing homes must never be deleted during a rank change or limit downgrade. PlexonHomes remains authoritative for over-limit existing-home behavior.
+''')
+
+          release = Path('.release/RELEASE_NOTES_3.0.1.md')
+          release.write_text('''# PlexonRanks 3.0.1
+
+Stable permission-contract migration for PlexonHomes.
+
+## Rank-based home limits
+
+- Replaces the legacy Essentials/EssentialsX multihome ownership model with the PlexonHomes contract `plexonhomes.limit.<N>`.
+- Restores the intended progression: base 5, Newbie 8, Tinkerer 12, Technician 16, Inventor 20, Skilled 24, and PRO 30 homes.
+- The exact grants are `plexonhomes.limit.5`, `.8`, `.12`, `.16`, `.20`, `.24`, and `.30`.
+- No bundled progression rank receives `plexonhomes.limit.unlimited`; the authoritative top tier remains 30.
+- `plexonhomes.sethome`, `plexonhomes.use`, `plexonhomes.delete`, `plexonhomes.rename`, and `plexonhomes.gui` remain default-true in PlexonHomes and are not redundantly granted by PlexonRanks.
+
+## Migration notes
+
+- Remove obsolete `essentials.sethome.multiple*` home-limit grants from the relevant LuckPerms groups after verifying the new PlexonHomes nodes in production.
+- Unrelated Essentials permissions remain intact and must not be bulk-removed.
+- Cumulative lower numeric PlexonRanks-owned home limits are safe because PlexonHomes uses the highest effective numeric `plexonhomes.limit.<N>` value.
+- PlexonRanks continues to own progression and grants; PlexonHomes continues to own home persistence, GUI, teleportation, and limit interpretation; LuckPerms remains permission authority.
+
+## Verification
+
+The exact merged `main` source is built and tested on Java 25 / Paper 26.2 / PlexonCore 2.0.4. Stable publication includes the JAR, SHA-256 checksum, test summary, and source provenance evidence.
+''')
+
+          test_path = Path('src/test/java/com/zpkdxgames/plexonranks/config/PlexonHomesPermissionContractTest.java')
+          test_path.parent.mkdir(parents=True, exist_ok=True)
+          test_path.write_text('''package com.zpkdxgames.plexonranks.config;
+
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class PlexonHomesPermissionContractTest {
+    private static final Pattern LIMIT = Pattern.compile("(?m)^\\s*- plexonhomes\\.limit\\.(\\d+)\\s*$");
+
+    @Test
+    void bundledLadderUsesAuthoritativePlexonHomesLimits() throws IOException {
+        String yaml = bundledRanks();
+        assertFalse(yaml.contains("essentials.sethome.multiple"));
+        assertFalse(yaml.contains("plexonhomes.limit.unlimited"));
+
+        assertTrue(section(yaml, "unranked", "newbie-1").contains("plexonhomes.limit.5"));
+        assertTrue(section(yaml, "newbie-1", "newbie-2").contains("plexonhomes.limit.8"));
+        assertTrue(section(yaml, "tinkerer-1", "tinkerer-2").contains("plexonhomes.limit.12"));
+        assertTrue(section(yaml, "technician-1", "technician-2").contains("plexonhomes.limit.16"));
+        assertTrue(section(yaml, "inventor-1", "inventor-2").contains("plexonhomes.limit.20"));
+        assertTrue(section(yaml, "skilled-1", "skilled-2").contains("plexonhomes.limit.24"));
+        assertTrue(section(yaml, "pro-1", "pro-2").contains("plexonhomes.limit.30"));
+
+        Matcher matcher = LIMIT.matcher(yaml);
+        java.util.ArrayList<Integer> limits = new java.util.ArrayList<>();
+        while (matcher.find()) limits.add(Integer.parseInt(matcher.group(1)));
+        assertEquals(List.of(5, 8, 12, 16, 20, 24, 30), limits);
+    }
+
+    @Test
+    void unrelatedEssentialsRewardsRemainUntouched() throws IOException {
+        String yaml = bundledRanks();
+        assertTrue(yaml.contains("essentials.head"));
+        assertTrue(yaml.contains("essentials.back"));
+    }
+
+    @Test
+    void plexonHomesActionAccessIsNotDuplicatedIntoRankRewards() throws IOException {
+        String yaml = bundledRanks();
+        assertFalse(yaml.contains("plexonhomes.sethome"));
+        assertFalse(yaml.contains("plexonhomes.use"));
+        assertFalse(yaml.contains("plexonhomes.delete"));
+        assertFalse(yaml.contains("plexonhomes.rename"));
+        assertFalse(yaml.contains("plexonhomes.gui"));
+    }
+
+    private static String bundledRanks() throws IOException {
+        try (InputStream stream = PlexonHomesPermissionContractTest.class.getResourceAsStream("/ranks.yml")) {
+            if (stream == null) throw new IOException("Bundled ranks.yml is missing");
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private static String section(String yaml, String rank, String nextRank) {
+        String startMarker = "  " + rank + ":";
+        String endMarker = "  " + nextRank + ":";
+        int start = yaml.indexOf(startMarker);
+        int end = yaml.indexOf(endMarker, start + startMarker.length());
+        assertTrue(start >= 0, "Missing rank " + rank);
+        assertTrue(end > start, "Missing next-rank boundary " + nextRank);
+        return yaml.substring(start, end);
+    }
+}
+''')
+
+          workflow = Path('.github/workflows/plexonhomes-migration.yml')
+          workflow.unlink()
+          PY
+
+      - name: Static migration audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -R --line-number --include='*.yml' --include='*.yaml' --include='*.java' 'plexonhomes.limit.' src | wc -l)" -ge 7
+          if grep -R --line-number --exclude='MIGRATION_PLEXONHOMES_PERMISSIONS.md' --exclude='RELEASE_NOTES_3.0.1.md' 'essentials.sethome.multiple' src .release docs; then
+            echo 'Legacy active Essentials home-limit reference remains' >&2
+            exit 1
+          fi
+          git diff --check
+
+      - name: Commit migration implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git commit -m 'Migrate rank home limits to PlexonHomes'
+          git push origin HEAD:migration/plexonhomes-permissions-3.0.1

@@ -3,6 +3,10 @@
 # Stable IDs are used for storage; order controls progression.
 # Rank identities preserve the supplied legacy gradients while every shared layout
 # is rendered through the MiniMessage-first 2.0 component pipeline.
+# Rank-based home capacity is owned by PlexonRanks through PlexonHomes permissions.
+# With cumulative permissions enabled, lower owned numeric limits intentionally remain
+# effective; PlexonHomes resolves the highest numeric plexonhomes.limit.<N> value.
+# Progression: base=5, Newbie=8, Tinkerer=12, Technician=16, Inventor=20, Skilled=24, PRO=30.
 schema-version: 2
 ranks:
   unranked:
@@ -17,7 +21,12 @@ ranks:
       description:
       - '&7Your progression starts here.'
     requirements: []
-    rewards: []
+    rewards:
+    - type: PERMISSION
+      persistent: true
+      permissions:
+      - plexonhomes.limit.5
+      display: []
     announce: false
     menu:
       use-global-template: true
@@ -52,12 +61,14 @@ ranks:
       - keysadmin give %player% basic 1
       display:
       - '&8• &a+1,000 &7Claim Blocks'
+      - '&8• &a8 &7homes'
       - '&8• &f1× Basic Key'
       - '&8• &dDisguise &8▸ &fPlayer'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.1
+      - plexonhomes.limit.8
       - iDisguise.disguise.player
       display: []
     announce: true
@@ -479,12 +490,14 @@ ranks:
       - adjustbonusclaimblocks %player% 11000
       display:
       - '&8• &a+11,000 &7Claim Blocks'
+      - '&8• &a12 &7homes'
       - '&8• &dDisguise &8▸ &fPufferfish'
       - '&8• &e/condense &7command'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.11
+      - plexonhomes.limit.12
       - iDisguise.disguise.pufferfish
       - essentials.condense
       display: []
@@ -691,11 +704,13 @@ ranks:
       - adjustbonusclaimblocks %player% 16000
       display:
       - '&8• &a+16,000 &7Claim Blocks'
+      - '&8• &a16 &7homes'
       - '&8• &dDisguise &8▸ &fFox'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.16
+      - plexonhomes.limit.16
       - iDisguise.disguise.fox
       display: []
     announce: true
@@ -905,11 +920,13 @@ ranks:
       - adjustbonusclaimblocks %player% 21000
       display:
       - '&8• &a+21,000 &7Claim Blocks'
+      - '&8• &a20 &7homes'
       - '&8• &dDisguise &8▸ &fTurtle'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.21
+      - plexonhomes.limit.20
       - iDisguise.disguise.turtle
       display: []
     announce: true
@@ -1113,11 +1130,13 @@ ranks:
       - adjustbonusclaimblocks %player% 26000
       display:
       - '&8• &a+26,000 &7Claim Blocks'
+      - '&8• &a24 &7homes'
       - '&8• &dDisguise &8▸ &fStrider'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.26
+      - plexonhomes.limit.24
       - iDisguise.disguise.strider
       display: []
     announce: true
@@ -1321,11 +1340,13 @@ ranks:
       - adjustbonusclaimblocks %player% 31000
       display:
       - '&8• &a+31,000 &7Claim Blocks'
+      - '&8• &a30 &7homes'
       - '&8• &dDisguise &8▸ &fCreeper'
     - type: PERMISSION
       persistent: true
       permissions:
       - rank.31
+      - plexonhomes.limit.30
       - iDisguise.disguise.creeper
       display: []
     announce: true

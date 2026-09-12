@@ -40,7 +40,7 @@ class PlexonHomesPermissionContractTest {
     void unrelatedEssentialsRewardsRemainUntouched() throws IOException {
         String yaml = bundledRanks();
         assertTrue(yaml.contains("essentials.head"));
-        assertTrue(yaml.contains("essentials.back"));
+        assertTrue(yaml.contains("essentials.hat"));
     }
 
     @Test

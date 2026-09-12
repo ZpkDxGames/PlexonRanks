@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.0.1 — PlexonHomes permission migration
+
+### Home capacity contract
+
+- Restored the intended 5/8/12/16/20/24/30 home progression through `plexonhomes.limit.<N>` grants.
+- The base/unranked rank owns `plexonhomes.limit.5`; Newbie I, Tinkerer I, Technician I, Inventor I, Skilled I and PRO I raise the cap to 8, 12, 16, 20, 24 and 30 respectively.
+- Removed Essentials/EssentialsX from the home-capacity ownership boundary. No active rank grant uses `essentials.sethome.multiple*`.
+- No unlimited tier was introduced because the authoritative progression tops out at 30 homes.
+- Ordinary PlexonHomes action and GUI permissions remain owned by PlexonHomes and are default-true; PlexonRanks does not duplicate them.
+
+### Permission safety
+
+- LuckPerms remains the effective permission authority and PlexonRanks continues using its existing managed persistent-grant reconciliation.
+- With cumulative permissions enabled, lower PlexonRanks-owned numeric limits may remain present; PlexonHomes resolves the highest effective numeric limit.
+- Unrelated Essentials permissions used by other rank rewards remain unchanged.
+- Added a bundled contract regression test and operator migration documentation.
+
 ## 3.0.0 — Stable
 
 ### Stable closure
